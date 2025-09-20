@@ -10,7 +10,6 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
-  base: mode === "development" ? "/" : "/orkhosssain.github.io/", // <-- replace with your repo name; use '/' if deploying to <username>.github.io root
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
