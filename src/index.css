@@ -42,15 +42,15 @@
     --gallery-overlay: 0 0% 3%;
     --gallery-text: 0 0% 3%;
     --gallery-text-muted: 0 0% 45%;
-    
+
     /* Gradients */
     --gradient-overlay: linear-gradient(180deg, transparent 0%, hsla(0, 0%, 3%, 0.7) 100%);
-    
+
     /* Shadows */
     --shadow-gallery: 0 20px 25px -5px hsla(0, 0%, 0%, 0.1), 0 10px 10px -5px hsla(0, 0%, 0%, 0.04);
     --shadow-card: 0 4px 6px -1px hsla(0, 0%, 0%, 0.1), 0 2px 4px -1px hsla(0, 0%, 0%, 0.06);
     --shadow-float: 0 10px 15px -3px hsla(0, 0%, 0%, 0.1), 0 4px 6px -2px hsla(0, 0%, 0%, 0.05);
-    
+
     /* Animations */
     --transition-smooth: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     --transition-elegant: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -106,10 +106,10 @@
     --gallery-overlay: 0 0% 98%;
     --gallery-text: 0 0% 98%;
     --gallery-text-muted: 0 0% 63%;
-    
+
     /* Dark mode gradients */
     --gradient-overlay: linear-gradient(180deg, transparent 0%, hsla(0, 0%, 7%, 0.8) 100%);
-    
+
     /* Dark mode shadows */
     --shadow-gallery: 0 25px 50px -12px hsla(0, 0%, 0%, 0.6);
     --shadow-card: 0 10px 25px -5px hsla(0, 0%, 0%, 0.4);
@@ -149,10 +149,12 @@
 }
 
 @layer components {
+
   /* Elegant gallery component classes */
   .gallery-card {
     @apply relative overflow-hidden bg-gallery-surface shadow-card transition-all duration-500 hover:shadow-gallery;
     border: 1px solid hsl(var(--border));
+    border-radius: 15px
   }
 
   .gallery-overlay {
