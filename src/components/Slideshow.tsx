@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { GalleryImage } from './Gallery';
 import { ThumbnailNav } from './ThumbnailNav';
+import { useHash } from 'react-use';
 
 interface SlideshowProps {
   images: GalleryImage[];
@@ -17,10 +18,14 @@ export const Slideshow: React.FC<SlideshowProps> = ({
   onClose,
   onImageChange,
 }) => {
+  const [hash, setHash] = useHash();
   const [isLoaded, setIsLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+
+  const [prevIndex, setPrevIndex] = useState(currentIndex);
+  const [dir, setDir] = useState<1 | -1>(1);
 
   const touchStartX = useRef<number | null>(null);
   const touchDeltaX = useRef<number>(0);
@@ -42,11 +47,13 @@ export const Slideshow: React.FC<SlideshowProps> = ({
   };
 
   const handlePrevious = () => {
+    setDir(-1);
     const newIndex = currentIndex > 0 ? currentIndex - 1 : images.length - 1;
     onImageChange(newIndex);
   };
 
   const handleNext = () => {
+    setDir(1);
     const newIndex = currentIndex < images.length - 1 ? currentIndex + 1 : 0;
     onImageChange(newIndex);
   };
@@ -72,6 +79,25 @@ export const Slideshow: React.FC<SlideshowProps> = ({
 
   useEffect(() => { setIsLoaded(false); }, [currentIndex]);
 
+  useEffect(() => {
+    setHash(`#slide-${currentIndex + 1}`);
+  }, [currentIndex, setHash]);
+
+  useEffect(() => {
+    if (hash.startsWith('#slide-')) {
+      const idx = parseInt(hash.replace('#slide-', '')) - 1;
+      if (!isNaN(idx) && idx >= 0 && idx < images.length) {
+        const forward = (idx > currentIndex) || (currentIndex === images.length - 1 && idx === 0);
+        setDir(forward ? 1 : -1);
+        onImageChange(idx);
+      }
+    }
+  }, [hash]);
+
+  useEffect(() => {
+    setPrevIndex(currentIndex);
+  }, [currentIndex]);
+
   const currentImage = images[currentIndex];
 
   return (
@@ -84,7 +110,7 @@ export const Slideshow: React.FC<SlideshowProps> = ({
         variant="ghost"
         size="icon"
         onClick={onClose}
-        className="fixed top-6 left-6 w-12 h-12 rounded-full p-0 bg-black/10 dark:bg-white/10 border border-black/10 dark:border-white/10 backdrop-blur-md hover:bg-black/20 dark:hover:bg-white/20"
+        className="fixed top-6 left-6 px-4 py-2 border-black/10 dark:border-white/10 backdrop-blur-md rounded-md"
         aria-label="Close slideshow"
       >
         <X className="h-4 w-4" />
@@ -104,12 +130,12 @@ export const Slideshow: React.FC<SlideshowProps> = ({
         onTouchEnd={handleTouchEnd}
       >
         <div className="relative max-w-5xl max-h-full">
-          <div className={`transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
+          <div className={`transform-gpu transition-all duration-300 ease-out ${isLoaded ? 'opacity-100 translate-x-0' : (dir === 1 ? 'opacity-0 translate-x-6' : 'opacity-0 -translate-x-6')}`}>
             <img
               ref={imageRef}
               src={currentImage.src}
               alt={currentImage.alt}
-              className="max-w-[92vw] max-h-[80vh] object-contain rounded-3xl"
+              className="max-w-[92vw] max-h-[80vh] object-contain object-center rounded-3xl"
               onLoad={() => setIsLoaded(true)}
             />
           </div>
@@ -143,7 +169,7 @@ export const Slideshow: React.FC<SlideshowProps> = ({
         variant="ghost"
         size="icon"
         onClick={handlePrevious}
-        className="fixed left-4 top-1/2 -translate-y-1/2 h-24 w-12 rounded-full p-0 bg-black/10 dark:bg-white/10 border border-black/10 dark:border-white/10 backdrop-blur-md hover:bg-black/20 dark:hover:bg-white/20"
+        className="fixed left-6 top-1/2 -translate-y-1/2 w-16 h-16 text-black dark:text-white transition-transform"
         aria-label="Previous image"
       >
         <ChevronLeft className="h-5 w-5" />
@@ -153,7 +179,7 @@ export const Slideshow: React.FC<SlideshowProps> = ({
         variant="ghost"
         size="icon"
         onClick={handleNext}
-        className="fixed right-4 top-1/2 -translate-y-1/2 h-24 w-12 rounded-full p-0 bg-black/10 dark:bg-white/10 border border-black/10 dark:border-white/10 backdrop-blur-md hover:bg-black/20 dark:hover:bg-white/20"
+        className="fixed right-6 top-1/2 -translate-y-1/2 w-16 h-16 text-black dark:text-white hover:scale-110 transition-transform"
         aria-label="Next image"
       >
         <ChevronRight className="h-5 w-5" />

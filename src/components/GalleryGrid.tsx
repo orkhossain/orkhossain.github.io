@@ -1,4 +1,6 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { GalleryImage } from './Gallery';
 
 interface GalleryGridProps {
@@ -6,13 +8,102 @@ interface GalleryGridProps {
   onImageClick: (index: number) => void;
 }
 
+gsap.registerPlugin(ScrollTrigger);
+
 export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }) => {
   const itemsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const [allLoaded, setAllLoaded] = useState(false);
+
+
+  // Watch images in the DOM and mark when they’ve all loaded
+  useEffect(() => {
+    setAllLoaded(false);
+    const container = containerRef.current;
+    if (!container) return;
+
+    const imgs = Array.from(container.querySelectorAll('img')) as HTMLImageElement[];
+    if (imgs.length === 0) {
+      setAllLoaded(true);
+      return;
+    }
+
+    let loaded = 0;
+    const onOneLoad = () => {
+      loaded += 1;
+      if (loaded >= imgs.length) setAllLoaded(true);
+    };
+
+    imgs.forEach((img) => {
+      if (img.complete && img.naturalWidth > 0) {
+        onOneLoad();
+      } else {
+        img.addEventListener('load', onOneLoad, { once: true });
+        img.addEventListener('error', onOneLoad, { once: true });
+      }
+    });
+
+    return () => {
+      imgs.forEach((img) => {
+        img.removeEventListener('load', onOneLoad);
+        img.removeEventListener('error', onOneLoad);
+      });
+    };
+  }, [images]);
+
+  // Initial on-appear stagger animation
+  useEffect(() => {
+    if (!allLoaded) return;
+
+    const els = itemsRef.current.filter(Boolean) as HTMLDivElement[];
+    if (!els.length) return;
+
+    // Initial hidden state
+    gsap.set(els, { opacity: 0, y: 30 });
+
+    // Animate in on page load
+    gsap.to(els, {
+      opacity: 1,
+      y: 0,
+      duration: 0.8,
+      ease: 'power3.out',
+      stagger: 0.08,
+      clearProps: 'opacity,transform',
+    });
+  }, [allLoaded]);
+
+  useEffect(() => {
+    if (itemsRef.current.length > 0) {
+      itemsRef.current.forEach((item) => {
+        if (!item) return;
+        gsap.fromTo(item,
+          { opacity: 0, y: 50 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 1,
+            ease: "power3.out",
+            scrollTrigger: {
+              trigger: item,
+              start: "top 80%",
+              toggleActions: "play none none reverse"
+            }
+          }
+        );
+      });
+    }
+
+    return () => {
+      ScrollTrigger.getAll().forEach(trigger => trigger.kill());
+    };
+  }, []);
 
   return (
     <div className="p-1">
       <div 
-        className="max-w mx-auto columns-2 md:columns-3 lg:columns-5 gap-2 [column-fill:_balance]"
+        ref={containerRef}
+        className="max-w mx-auto columns-2 md:columns-3 lg:columns-4 gap-2 [column-fill:_balance]"
       >
         {images.map((image, index) => (
           <div
@@ -53,9 +144,11 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }
       </div>
 
       {/* Elegant loading indicator */}
-      <div className="h-32 flex items-center justify-center mt-16">
-        <div className="w-1 h-1 bg-gallery-text-muted rounded-full animate-pulse"></div>
-      </div>
+      {!allLoaded && (
+        <div className="h-32 flex items-center justify-center mt-16">
+          <div className="w-1 h-1 bg-gallery-text-muted rounded-full animate-pulse"></div>
+        </div>
+      )}
     </div>
   );
 };

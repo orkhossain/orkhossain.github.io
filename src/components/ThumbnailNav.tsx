@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { GalleryImage } from './Gallery';
 
@@ -16,6 +16,26 @@ export const ThumbnailNav: React.FC<ThumbnailNavProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const thumbnailRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const handleRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+
+  const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+  const updateFromClientY = (clientY: number) => {
+    const track = trackRef.current;
+    if (!track || images.length === 0) return;
+    const rect = track.getBoundingClientRect();
+    const y = clamp(clientY - rect.top, 0, rect.height);
+    const ratio = rect.height > 0 ? y / rect.height : 0;
+    const idx = Math.round(ratio * (images.length - 1));
+    setDragIndex(idx);
+    onImageSelect(idx);
+    // Move handle
+    if (handleRef.current) {
+      handleRef.current.style.top = `${(idx / (images.length - 1 || 1)) * 100}%`;
+    }
+  };
 
   useEffect(() => {
     // Elegant entrance animation
@@ -49,45 +69,42 @@ export const ThumbnailNav: React.FC<ThumbnailNavProps> = ({
     }
   }, [currentIndex]);
 
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => { if (isDraggingRef.current) updateFromClientY(e.clientY); };
+    const onUp = () => { isDraggingRef.current = false; setDragIndex(null); };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchend', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchend', onUp);
+    };
+  }, []);
+
   return (
-    <div 
+    <div
       ref={containerRef}
-      className="slideshow-nav"
+      className="fixed right-0  top-1/2 -translate-y-1/2 z-[60] w-20 md:w-24 h-[72vh]"
     >
-      <div 
+      <div
         ref={scrollRef}
-        className="thumbnail-scroll"
+        className="absolute inset-0 overflow-y-auto no-scrollbar pr-5"
       >
         {images.map((image, index) => (
           <div
             key={image.id}
-            ref={el => thumbnailRefs.current[index] = el}
-            className={`thumbnail-item ${index === currentIndex ? 'active' : ''}`}
+            ref={el => (thumbnailRefs.current[index] = el)}
+            className={`relative w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden border transition-all duration-200 ${index === currentIndex ? 'border-black/50 dark:border-white/60 ring-2 ring-black/20 dark:ring-white/20 opacity-100' : 'border-black/10 dark:border-white/10 opacity-70 hover:opacity-100'}`}
             onClick={() => onImageSelect(index)}
           >
             <img
               src={image.src}
               alt={image.alt}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover object-center"
               loading="lazy"
             />
           </div>
-        ))}
-      </div>
-
-      {/* Elegant scroll indicator */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex flex-col gap-1">
-        {images.map((_, index) => (
-          <div
-            key={index}
-            className={`w-0.5 h-2 transition-all duration-400 ${
-              index === currentIndex 
-                ? 'bg-gallery-text' 
-                : Math.abs(index - currentIndex) <= 1 
-                  ? 'bg-gallery-text/60' 
-                  : 'bg-gallery-text-muted/30'
-            }`}
-          />
         ))}
       </div>
     </div>

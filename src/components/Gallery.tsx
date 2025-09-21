@@ -66,7 +66,7 @@ export const Gallery: React.FC<GalleryProps> = ({ className = '' }) => {
       {!isSlideshow && (
         <Button
           onClick={startSlideshow}
-          className="floating-button top-8 right-8 rounded-full w-14 h-14 p-0"
+          className="floating-button top-8 right-8 rounded-full w-14 h-14 p-0 bg-white/20 dark:bg-black/20 backdrop-blur-md border border-white/30 shadow-lg hover:bg-white/30 dark:hover:bg-black/30 transition-colors"
           aria-label="Start slideshow"
         >
           <Play className="h-5 w-5" />
