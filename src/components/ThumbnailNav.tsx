@@ -37,16 +37,16 @@ export const ThumbnailNav: React.FC<ThumbnailNavProps> = ({
     }
   };
 
-  useEffect(() => {
-    // Elegant entrance animation
-    if (containerRef.current) {
-      gsap.fromTo(
-        containerRef.current,
-        { x: 60, opacity: 0 },
-        { x: 0, opacity: 1, duration: 0.8, ease: 'power2.out', delay: 0.4 }
-      );
-    }
-  }, []);
+  // useEffect(() => {
+  //   // Elegant entrance animation
+  //   if (containerRef.current) {
+  //     gsap.fromTo(
+  //       containerRef.current,
+  //       { x: 60, opacity: 0 },
+  //       { x: 0, opacity: 1, duration: 0.8, ease: 'power2.out', delay: 0.4 }
+  //     );
+  //   }
+  // }, []);
 
   useEffect(() => {
     // Auto-scroll to current thumbnail
@@ -85,11 +85,11 @@ export const ThumbnailNav: React.FC<ThumbnailNavProps> = ({
   return (
     <div
       ref={containerRef}
-      className="w-full h-full flex items-center justify-center"
+      className="w-full h-full flex items-center justify-end overflow-hidden relative"
     >
       <div
         ref={scrollRef}
-        className="h-[80vh] overflow-y-auto no-scrollbar space-y-1 flex flex-col items-center"
+        className="h-[80vh] overflow-y-auto no-scrollbar flex flex-col items-end justify-center ml-auto"
       >
         {images.map((image, index) => (
           <div
@@ -97,15 +97,15 @@ export const ThumbnailNav: React.FC<ThumbnailNavProps> = ({
             ref={el => (thumbnailRefs.current[index] = el)}
             className={`relative w-10 h-10 md:w-12 md:h-12 rounded-md overflow-hidden cursor-pointer transition-all duration-200 ${
               index === currentIndex 
-                ? 'ring-2 ring-gallery-text/40 opacity-100 scale-110' 
-                : 'opacity-60 hover:opacity-100 hover:scale-105'
+                ? 'opacity-100' 
+                : 'opacity-20 hover:opacity-100 '
             }`}
             onClick={() => onImageSelect(index)}
           >
             <img
               src={image.src}
               alt={image.alt}
-              className="w-full h-full object-cover object-center"
+              className="w-full h-full object-cover object-center aspect-square"
               loading="lazy"
             />
           </div>
