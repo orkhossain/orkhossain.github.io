@@ -7,13 +7,14 @@ const outDir = './public/gallery/webp';   // adjust if needed
 
 const validExts = ['.jpg', '.jpeg', '.png'];
 
-function convertAll(dir) {
+async function convertAll(dir) {
+    const tasks = [];
     fs.readdirSync(dir).forEach(file => {
         const fullPath = path.join(dir, file);
         const ext = path.extname(file).toLowerCase();
 
         if (fs.statSync(fullPath).isDirectory()) {
-            convertAll(fullPath); // recurse
+            tasks.push(...convertAll(fullPath));
         } else if (validExts.includes(ext)) {
             const base = path.basename(file, ext);
             if (!fs.existsSync(outDir)) {
@@ -21,24 +22,32 @@ function convertAll(dir) {
             }
             const outPath = path.join(outDir, `${base}.webp`);
 
-            sharp(fullPath)
-                .withMetadata({ orientation: 1 }) // prevent auto-rotation by normalizing orientation
-                .webp({ quality: 80 })
-                .toFile(outPath)
-                .then(() => console.log(`✅ Converted: ${file} → ${base}.webp`))
-                .catch(err => console.error(`❌ Error converting ${file}:`, err));
+            tasks.push(
+                sharp(fullPath)
+                    .withMetadata({ orientation: 1 }) // prevent auto-rotation by normalizing orientation
+                    .webp({ quality: 80 })
+                    .toFile(outPath)
+                    .then(() => console.log(`✅ Converted: ${file} → ${base}.webp`))
+                    .catch(err => console.error(`❌ Error converting ${file}:`, err))
+            );
         }
     });
+    return tasks;
 }
 
-convertAll(inputDir);
+async function main() {
+    const tasks = convertAll(inputDir);
+    await Promise.all(tasks);
 
-if (process.env.NODE_ENV === 'production') {
-    // Remove raw images after conversion
-    try {
-        fs.rmSync(inputDir, { recursive: true, force: true });
-        console.log(`🗑️ Removed raw images from ${inputDir}`);
-    } catch (err) {
-        console.error(`⚠️ Could not remove raw images:`, err);
+    if (process.env.NODE_ENV === 'production') {
+        // Remove raw images after conversion
+        try {
+            fs.rmSync(inputDir, { recursive: true, force: true });
+            console.log(`🗑️ Removed raw images from ${inputDir}`);
+        } catch (err) {
+            console.error(`⚠️ Could not remove raw images:`, err);
+        }
     }
 }
+
+main();
