@@ -112,5 +112,7 @@ export const ThumbnailNav: React.FC<ThumbnailNavProps> = ({
         ))}
       </div>
     </div>
+
+    
   );
 };

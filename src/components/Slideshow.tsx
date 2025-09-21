@@ -34,6 +34,20 @@ export const Slideshow: React.FC<SlideshowProps> = ({
   const touchStartX = useRef<number | null>(null);
   const touchDeltaX = useRef<number>(0);
 
+  const bottomNavRef = useRef<HTMLDivElement>(null);
+
+  const seekBarRef = useRef<HTMLDivElement>(null);
+  const isSeekingRef = useRef(false);
+
+  const seekToClientX = (clientX: number) => {
+    if (!seekBarRef.current || images.length === 0) return;
+    const rect = seekBarRef.current.getBoundingClientRect();
+    const x = Math.min(Math.max(clientX - rect.left, 0), rect.width);
+    const ratio = x / rect.width;
+    const newIndex = Math.min(images.length - 1, Math.max(0, Math.round(ratio * (images.length - 1))));
+    onImageChange(newIndex);
+  };
+
   const handleTouchStart: React.TouchEventHandler<HTMLDivElement> = (e) => {
     touchStartX.current = e.touches[0].clientX;
     touchDeltaX.current = 0;
@@ -50,6 +64,20 @@ export const Slideshow: React.FC<SlideshowProps> = ({
     setTimeout(() => setAutoPlay(true), 800);
     touchStartX.current = null;
     touchDeltaX.current = 0;
+  };
+
+  const handleSeekPointerDown: React.PointerEventHandler<HTMLDivElement> = (e) => {
+    isSeekingRef.current = true;
+    (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+    seekToClientX(e.clientX);
+  };
+  const handleSeekPointerMove: React.PointerEventHandler<HTMLDivElement> = (e) => {
+    if (!isSeekingRef.current) return;
+    seekToClientX(e.clientX);
+  };
+  const handleSeekPointerUp: React.PointerEventHandler<HTMLDivElement> = (e) => {
+    isSeekingRef.current = false;
+    (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId);
   };
 
   const handleCloseSlideshow = () => {
@@ -150,6 +178,41 @@ export const Slideshow: React.FC<SlideshowProps> = ({
       });
   }, [currentIndex, dir]);
 
+  useEffect(() => {
+    // Preload current image via <link rel="preload"> for faster fetch
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'image';
+    link.href = images[currentIndex]?.src;
+    document.head.appendChild(link);
+
+    // Preload neighbors using Image()
+    const nextIdx = (currentIndex + 1) % images.length;
+    const prevIdx = (currentIndex - 1 + images.length) % images.length;
+    const nextImg = new Image();
+    const prevImg = new Image();
+    nextImg.decoding = 'async';
+    prevImg.decoding = 'async';
+    nextImg.loading = 'eager';
+    prevImg.loading = 'eager';
+    nextImg.src = images[nextIdx]?.src || '';
+    prevImg.src = images[prevIdx]?.src || '';
+
+    return () => {
+      // Cleanup the preload link
+      if (link && link.parentNode) link.parentNode.removeChild(link);
+    };
+  }, [currentIndex, images]);
+
+  useEffect(() => {
+    if (bottomNavRef.current) {
+      const activeThumb = bottomNavRef.current.querySelector('.border-primary') as HTMLElement;
+      if (activeThumb) {
+        activeThumb.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
+    }
+  }, [currentIndex]);
+
   const currentImage = images[currentIndex];
 
   return (
@@ -183,32 +246,42 @@ export const Slideshow: React.FC<SlideshowProps> = ({
         onMouseEnter={() => setAutoPlay(false)}
         onMouseLeave={() => setAutoPlay(true)}
       >
-        <div className="relative max-w-5xl max-h-full">
+        <div className="relative w-[90vw] max-h-full mx-auto flex justify-center">
           <div className="relative overflow-hidden rounded-3xl isolate">
-            {/* Previous image layer */}
-            <img
-            loading="lazy"
-              ref={prevImageRef}
-              src={images[prevIndex]?.src}
-              alt={images[prevIndex]?.alt || ''}
-              className="absolute inset-0 max-w-[92vw] max-h-[80vh] object-contain object-center rounded-3xl select-none pointer-events-none transform-gpu shadow-none mix-blend-normal"
-              style={{ backfaceVisibility: 'hidden', willChange: 'transform, opacity' }}
-              draggable={false}
-            />
-            {/* Current image layer */}
-            <img
-              ref={imageRef}
-              src={currentImage.src}
-              alt={currentImage.alt}
-              className={`relative max-w-[92vw] max-h-[80vh] object-contain object-center rounded-3xl bg-white dark:bg-black select-none pointer-events-none transform-gpu shadow-none mix-blend-normal transition-opacity duration-700 ease-out ${
-                isLoaded ? 'opacity-100' : 'opacity-0'
-              }`}
-              style={{ backfaceVisibility: 'hidden', willChange: 'transform, opacity' }}
-              onLoad={() => {
-                setIsLoaded(true);
-              }}
-              draggable={false}
-            />
+            <div className="relative w-full h-[80vh] flex items-center justify-center">
+              {/* Previous image layer */}
+              <img
+                loading="lazy"
+                decoding="async"
+                sizes="(max-width: 768px) 90vw, 70vw"
+                ref={prevImageRef}
+                src={images[prevIndex]?.src}
+                alt={images[prevIndex]?.alt || ''}
+                className="absolute inset-0 w-full h-full object-contain object-center select-none pointer-events-none transform-gpu shadow-none mix-blend-normal"
+                style={{ backfaceVisibility: 'hidden', willChange: 'transform, opacity' }}
+                draggable={false}
+              />
+              {/* Current image layer */}
+              <img
+                ref={imageRef}
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
+                sizes="(max-width: 768px) 90vw, 70vw"
+                width={currentImage.width}
+                height={currentImage.height}
+                src={currentImage.src}
+                alt={currentImage.alt}
+                className={`absolute inset-0 w-full h-full object-contain object-center bg-transparent select-none pointer-events-none transform-gpu shadow-none mix-blend-normal transition-opacity duration-700 ease-out ${
+                  isLoaded ? 'opacity-100' : 'opacity-0'
+                }`}
+                style={{ backfaceVisibility: 'hidden', willChange: 'transform, opacity' }}
+                onLoad={() => {
+                  setIsLoaded(true);
+                }}
+                draggable={false}
+              />
+            </div>
           </div>
 
           {!isLoaded && (
@@ -241,7 +314,7 @@ export const Slideshow: React.FC<SlideshowProps> = ({
         size="icon"
         onClick={handlePrevious}
         disabled={isTransitioning}
-        className="fixed left-6 top-1/2 -translate-y-1/2 w-16 h-16 z-[80] flex items-center justify-center pointer-events-auto bg-transparent text-white hover:!bg-transparent active:!bg-transparent focus:!bg-transparent focus-visible:ring-0 hover:!text-white active:!text-white transition-none disabled:opacity-40 disabled:pointer-events-none"
+        className="fixed left-3 md:left-6 bottom-24 md:bottom-auto md:top-1/2 md:-translate-y-1/2 w-12 h-12 md:w-16 md:h-16 z-[80] flex items-center justify-center pointer-events-auto bg-transparent text-white hover:!bg-transparent active:!bg-transparent focus:!bg-transparent focus-visible:ring-0 hover:!text-white active:!text-white transition-none disabled:opacity-40 disabled:pointer-events-none"
         aria-label="Previous image"
       >
         <ChevronLeft className="h-10 w-10" />
@@ -252,14 +325,14 @@ export const Slideshow: React.FC<SlideshowProps> = ({
         size="icon"
         onClick={handleNext}
         disabled={isTransitioning}
-        className="fixed right-24 md:right-28 top-1/2 -translate-y-1/2 w-16 h-16 z-[80] flex items-center justify-center pointer-events-auto bg-transparent text-white hover:!bg-transparent active:!bg-transparent focus:!bg-transparent focus-visible:ring-0 hover:!text-white active:!text-white transition-none disabled:opacity-40 disabled:pointer-events-none"
+        className="fixed right-3 md:right-28 bottom-24 md:bottom-auto md:top-1/2 md:-translate-y-1/2 w-12 h-12 md:w-16 md:h-16 z-[80] flex items-center justify-center pointer-events-auto bg-transparent text-white hover:!bg-transparent active:!bg-transparent focus:!bg-transparent focus-visible:ring-0 hover:!text-white active:!text-white transition-none disabled:opacity-40 disabled:pointer-events-none"
         aria-label="Next image"
       >
         <ChevronRight className="h-10 w-10" />
       </Button>
 
-      {/* Thumbnail navigation - Sticked to right */}
-      <div className="fixed right-0 top-0 bottom-0 w-16 md:w-20 flex items-center justify-center bg-gallery-bg z-[40]">
+      {/* Thumbnail navigation - Sticked to right (md+) */}
+      <div className="fixed right-0 top-0 bottom-0 w-16 md:w-20 flex items-center justify-center bg-gallery-bg z-[40] md:flex hidden">
         <ThumbnailNav
           images={images}
           currentIndex={currentIndex}
@@ -267,12 +340,66 @@ export const Slideshow: React.FC<SlideshowProps> = ({
         />
       </div>
 
-      <div className="absolute left-1/2 -translate-x-1/2 bottom-4 w-[60vw] max-w-2xl h-1.5 bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
+      {/* Mobile bottom bar thumbnail nav */}
+      <div className="fixed left-0 right-0 bottom-0 z-[60] md:hidden bg-gallery-bg/95 backdrop-blur border-t border-white/10">
+        <div className="overflow-x-auto overflow-y-hidden" ref={bottomNavRef} data-thumb-scroll>
+          <div className="flex flex-row w-max">
+            {images.map((img, idx) => (
+              <button
+                key={img.id}
+                onClick={() => onImageChange(idx)}
+                className={`flex-shrink-0 w-12 h-12 overflow-hidden outline-none ${idx === currentIndex ? 'ring-2 ring-primary' : ''}`}
+              >
+                <img
+                  src={img.src}
+                  alt={img.alt}
+                  className={`w-full h-full object-cover transition-opacity duration-300 ${idx === currentIndex ? 'opacity-100' : 'opacity-50 hover:opacity-75'}`}
+                  draggable={false}
+                />
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div
+        ref={seekBarRef}
+        className="absolute left-1/2 -translate-x-1/2 bottom-20 md:bottom-4 z-[65] w-[70vw] max-w-2xl h-3 bg-white/15 dark:bg-white/15 rounded-full overflow-hidden cursor-pointer touch-pan-x border border-white/20 backdrop-blur-sm"
+        onPointerDown={handleSeekPointerDown}
+        onPointerMove={handleSeekPointerMove}
+        onPointerUp={handleSeekPointerUp}
+      >
         <div
-          className="h-full bg-black/50 dark:bg-white/60 transition-all duration-300"
-          style={{ width: `${((currentIndex+1)/images.length)*100}%` }}
+          className="h-full bg-black/60 dark:bg-white/70 rounded-full transition-all duration-200"
+          style={{ width: `${((currentIndex + 1) / images.length) * 100}%` }}
         />
       </div>
+
+      <style>{`
+        /* Custom horizontal scroller styling for the mobile thumbnail strip */
+        [data-thumb-scroll] { 
+          scrollbar-width: thin; /* Firefox */
+          scrollbar-color: rgba(255,255,255,0.35) transparent; /* Firefox */
+        }
+        [data-thumb-scroll]::-webkit-scrollbar {
+          height: 6px; /* Horizontal scrollbar height */
+        }
+        [data-thumb-scroll]::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        [data-thumb-scroll]::-webkit-scrollbar-thumb {
+          background: rgba(255,255,255,0.35);
+          border-radius: 9999px; /* pill */
+        }
+        [data-thumb-scroll]:hover::-webkit-scrollbar-thumb {
+          background: rgba(255,255,255,0.55);
+        }
+        @media (prefers-color-scheme: light) {
+          [data-thumb-scroll] { scrollbar-color: rgba(0,0,0,0.35) transparent; }
+          [data-thumb-scroll]::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.35); }
+          [data-thumb-scroll]:hover::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.55); }
+        }
+      `}</style>
     </div>
   );
 };

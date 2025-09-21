@@ -133,13 +133,13 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }
     <div className="p-1">
       <div 
         ref={containerRef}
-        className="max-w mx-auto columns-2 md:columns-3 lg:columns-4 gap-2 [column-fill:_balance]"
+        className="max-w-screen-3xl mx-auto columns-2 md:columns-3 lg:columns-6 gap-6 [column-fill:_balance]"
       >
         {images.map((image, index) => (
           <div
             key={image.id}
             ref={el => itemsRef.current[index] = el}
-            className="gallery-item cursor-pointer group break-inside-avoid mb-2"
+            className={`gallery-item cursor-pointer group break-inside-avoid mb-2 ${image.width > image.height ? 'col-span-2' : ''}`}
             onClick={() => onImageClick(index)}
           >
             <div className="relative w-full overflow-hidden rounded-xl bg-white/50 dark:bg-white/5 backdrop-blur-sm">
