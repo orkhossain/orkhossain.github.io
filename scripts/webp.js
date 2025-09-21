@@ -9,12 +9,13 @@ const validExts = ['.jpg', '.jpeg', '.png'];
 
 async function convertAll(dir) {
     const tasks = [];
-    fs.readdirSync(dir).forEach(file => {
+    fs.readdirSync(dir).forEach(async file => {
         const fullPath = path.join(dir, file);
         const ext = path.extname(file).toLowerCase();
 
         if (fs.statSync(fullPath).isDirectory()) {
-            tasks.push(...convertAll(fullPath));
+            const subTasks = await convertAll(fullPath);
+            tasks.push(...subTasks);
         } else if (validExts.includes(ext)) {
             const base = path.basename(file, ext);
             if (!fs.existsSync(outDir)) {
@@ -36,7 +37,7 @@ async function convertAll(dir) {
 }
 
 async function main() {
-    const tasks = convertAll(inputDir);
+    const tasks = await convertAll(inputDir);
     await Promise.all(tasks);
 
     if (process.env.NODE_ENV === 'production') {
