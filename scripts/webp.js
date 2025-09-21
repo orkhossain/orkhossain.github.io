@@ -9,7 +9,8 @@ const validExts = ['.jpg', '.jpeg', '.png'];
 
 async function convertAll(dir) {
     const tasks = [];
-    fs.readdirSync(dir).forEach(async file => {
+    const files = fs.readdirSync(dir);
+    for (const file of files) {
         const fullPath = path.join(dir, file);
         const ext = path.extname(file).toLowerCase();
 
@@ -25,14 +26,14 @@ async function convertAll(dir) {
 
             tasks.push(
                 sharp(fullPath)
-                    .withMetadata({ orientation: 1 }) // prevent auto-rotation by normalizing orientation
+                    .rotate() // ✅ rotate pixels based on EXIF and remove the Orientation tag
                     .webp({ quality: 80 })
                     .toFile(outPath)
                     .then(() => console.log(`✅ Converted: ${file} → ${base}.webp`))
                     .catch(err => console.error(`❌ Error converting ${file}:`, err))
             );
         }
-    });
+    }
     return tasks;
 }
 

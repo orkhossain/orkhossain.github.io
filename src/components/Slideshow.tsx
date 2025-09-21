@@ -218,7 +218,7 @@ export const Slideshow: React.FC<SlideshowProps> = ({
           )}
 
           {/* Elegant image info */}
-          {isLoaded && (currentImage.title || currentImage.description) && (
+          {/* {isLoaded && (currentImage.title || currentImage.description) && (
             <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
               {currentImage.title && (
                 <h3 className="text-xl md:text-3xl font-light tracking-wide text-black dark:text-white">
@@ -231,7 +231,7 @@ export const Slideshow: React.FC<SlideshowProps> = ({
                 </p>
               )}
             </div>
-          )}
+          )} */}
         </div>
       </div>
 

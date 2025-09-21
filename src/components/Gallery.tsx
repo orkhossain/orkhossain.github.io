@@ -19,7 +19,7 @@ export interface GalleryImage {
 }
 
 
-const imageModules = import.meta.glob('/public/gallery/images/*.webp', { eager: true, import: 'default' });
+const imageModules = import.meta.glob('/public/gallery/webp/*.webp', { eager: true, import: 'default' });
 
 const GALLERY_IMAGES: GalleryImage[] = Object.entries(imageModules).map(([path, src], index) => {
   const filename = path.split('/').pop() || `image-${index}`;
