@@ -187,6 +187,7 @@ export const Slideshow: React.FC<SlideshowProps> = ({
           <div className="relative overflow-hidden rounded-3xl isolate">
             {/* Previous image layer */}
             <img
+            loading="lazy"
               ref={prevImageRef}
               src={images[prevIndex]?.src}
               alt={images[prevIndex]?.alt || ''}

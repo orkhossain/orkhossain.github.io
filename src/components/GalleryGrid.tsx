@@ -8,6 +8,8 @@ interface GalleryGridProps {
   onImageClick: (index: number) => void;
 }
 
+
+
 gsap.registerPlugin(ScrollTrigger);
 
 export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }) => {

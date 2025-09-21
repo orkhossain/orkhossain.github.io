@@ -6,7 +6,6 @@ import { Slideshow } from './Slideshow';
 import { Button } from '@/components/ui/button';
 import { Play } from 'lucide-react';
 
-
 gsap.registerPlugin(ScrollTrigger);
 
 export interface GalleryImage {
@@ -20,7 +19,7 @@ export interface GalleryImage {
 }
 
 
-const imageModules = import.meta.glob('/public/gallery/images/*.{jpg,jpeg,png,webp}', { eager: true, import: 'default' });
+const imageModules = import.meta.glob('/public/gallery/images/*.webp', { eager: true, import: 'default' });
 
 const GALLERY_IMAGES: GalleryImage[] = Object.entries(imageModules).map(([path, src], index) => {
   const filename = path.split('/').pop() || `image-${index}`;
