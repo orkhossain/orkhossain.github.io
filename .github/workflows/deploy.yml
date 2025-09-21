@@ -24,7 +24,11 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Set NODE_ENV to production
+        run: echo "NODE_ENV=production" >> $GITHUB_ENV
       - run: npm run build
+        env:
+          NODE_ENV: production
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

@@ -2,8 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import sharp from 'sharp';
 
-const inputDir = './public/gallery/images';   // adjust if needed
-const outputDir = inputDir;                   // overwrite or save alongside
+const inputDir = './public/gallery/raw';   // adjust if needed
+const outDir = './public/gallery/webp';   // adjust if needed
 
 const validExts = ['.jpg', '.jpeg', '.png'];
 
@@ -16,9 +16,13 @@ function convertAll(dir) {
             convertAll(fullPath); // recurse
         } else if (validExts.includes(ext)) {
             const base = path.basename(file, ext);
-            const outPath = path.join(dir, `${base}.webp`);
+            if (!fs.existsSync(outDir)) {
+                fs.mkdirSync(outDir, { recursive: true });
+            }
+            const outPath = path.join(outDir, `${base}.webp`);
 
             sharp(fullPath)
+                .withMetadata({ orientation: 1 }) // prevent auto-rotation by normalizing orientation
                 .webp({ quality: 80 })
                 .toFile(outPath)
                 .then(() => console.log(`✅ Converted: ${file} → ${base}.webp`))
@@ -28,3 +32,13 @@ function convertAll(dir) {
 }
 
 convertAll(inputDir);
+
+if (process.env.NODE_ENV === 'production') {
+    // Remove raw images after conversion
+    try {
+        fs.rmSync(inputDir, { recursive: true, force: true });
+        console.log(`🗑️ Removed raw images from ${inputDir}`);
+    } catch (err) {
+        console.error(`⚠️ Could not remove raw images:`, err);
+    }
+}
