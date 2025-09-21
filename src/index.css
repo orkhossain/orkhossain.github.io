@@ -2,6 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
+/* System theme detection */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: 18 18 18;
+    --foreground: 250 250 250;
+    --card: 24 24 27;
+    --card-foreground: 250 250 250;
+    --popover: 24 24 27;
+    --popover-foreground: 250 250 250;
+    --primary: 250 250 250;
+    --primary-foreground: 9 9 11;
+    --secondary: 39 39 42;
+    --secondary-foreground: 250 250 250;
+    --muted: 39 39 42;
+    --muted-foreground: 161 161 170;
+    --accent: 39 39 42;
+    --accent-foreground: 250 250 250;
+    --destructive: 239 68 68;
+    --destructive-foreground: 250 250 250;
+    --border: 39 39 42;
+    --input: 39 39 42;
+    --ring: 212 212 216;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+
+    /* Gallery specific */
+    --gallery-bg: 18 18 18;
+    --gallery-surface: 24 24 27;
+    --gallery-text: 250 250 250;
+    --gallery-text-muted: 161 161 170;
+  }
+}
+
 /* Elegant Gallery Design System - Serif Black & White Aesthetic */
 
 @layer base {

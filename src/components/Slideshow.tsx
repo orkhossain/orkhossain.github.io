@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { gsap } from 'gsap';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { GalleryImage } from './Gallery';
@@ -20,9 +21,11 @@ export const Slideshow: React.FC<SlideshowProps> = ({
 }) => {
   const [hash, setHash] = useHash();
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const prevImageRef = useRef<HTMLImageElement>(null);
 
   const [prevIndex, setPrevIndex] = useState(currentIndex);
   const [dir, setDir] = useState<1 | -1>(1);
@@ -46,16 +49,29 @@ export const Slideshow: React.FC<SlideshowProps> = ({
     touchDeltaX.current = 0;
   };
 
+  const handleCloseSlideshow = () => {
+    // Clear hash first, then close
+    setHash('');
+    // Small delay to allow hash to clear
+    setTimeout(() => onClose(), 100);
+  };
+
   const handlePrevious = () => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
     setDir(-1);
     const newIndex = currentIndex > 0 ? currentIndex - 1 : images.length - 1;
     onImageChange(newIndex);
+    setTimeout(() => setIsTransitioning(false), 500);
   };
 
   const handleNext = () => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
     setDir(1);
     const newIndex = currentIndex < images.length - 1 ? currentIndex + 1 : 0;
     onImageChange(newIndex);
+    setTimeout(() => setIsTransitioning(false), 500);
   };
 
   const handleKeyPress = (e: KeyboardEvent) => {
@@ -67,7 +83,7 @@ export const Slideshow: React.FC<SlideshowProps> = ({
         handleNext();
         break;
       case 'Escape':
-        onClose();
+        handleCloseSlideshow();
         break;
     }
   };
@@ -77,7 +93,39 @@ export const Slideshow: React.FC<SlideshowProps> = ({
     return () => document.removeEventListener('keydown', handleKeyPress);
   }, [currentIndex]);
 
-  useEffect(() => { setIsLoaded(false); }, [currentIndex]);
+  useEffect(() => { 
+    setIsLoaded(false);
+    
+    // Enhanced image transition animation
+    if (imageRef.current) {
+      const tl = gsap.timeline();
+      
+      // Slide out current image with enhanced effects
+      tl.to(imageRef.current, {
+        x: dir === 1 ? -150 : 150,
+        opacity: 0,
+        scale: 0.95,
+        rotationY: dir === 1 ? -10 : 10,
+        duration: 0.4,
+        ease: 'power2.in'
+      })
+      // Reset position for new image
+      .set(imageRef.current, {
+        x: dir === 1 ? 150 : -150,
+        rotationY: dir === 1 ? 10 : -10,
+        scale: 1.05
+      })
+      // Slide in new image with enhanced effects
+      .to(imageRef.current, {
+        x: 0,
+        opacity: 1,
+        scale: 1,
+        rotationY: 0,
+        duration: 0.5,
+        ease: 'power2.out'
+      });
+    }
+  }, [currentIndex, dir]);
 
   useEffect(() => {
     setHash(`#slide-${currentIndex + 1}`);
@@ -103,17 +151,17 @@ export const Slideshow: React.FC<SlideshowProps> = ({
   return (
     <div 
       ref={overlayRef}
-      className="fixed inset-0 z-50 bg-white/95 dark:bg-black/95 backdrop-blur-sm font-elegant"
+      className="fixed inset-0 z-50 bg-gallery-bg backdrop-blur-sm font-elegant"
     >
       {/* Close button */}
       <Button
         variant="ghost"
         size="icon"
-        onClick={onClose}
-        className="fixed top-6 left-6 px-4 py-2 border-black/10 dark:border-white/10 backdrop-blur-md rounded-md"
+        onClick={handleCloseSlideshow}
+        className="fixed top-6 left-6 w-12 h-12 bg-gallery-surface/50 hover:bg-gallery-surface/70 backdrop-blur-md rounded-full z-60 text-gallery-text hover:text-gallery-text border border-gallery-text/20"
         aria-label="Close slideshow"
       >
-        <X className="h-4 w-4" />
+        <X className="h-5 w-5" />
       </Button>
 
       {/* Image counter */}
@@ -130,13 +178,31 @@ export const Slideshow: React.FC<SlideshowProps> = ({
         onTouchEnd={handleTouchEnd}
       >
         <div className="relative max-w-5xl max-h-full">
-          <div className={`transform-gpu transition-all duration-300 ease-out ${isLoaded ? 'opacity-100 translate-x-0' : (dir === 1 ? 'opacity-0 translate-x-6' : 'opacity-0 -translate-x-6')}`}>
+          <div className="relative overflow-hidden rounded-3xl">
             <img
               ref={imageRef}
               src={currentImage.src}
               alt={currentImage.alt}
-              className="max-w-[92vw] max-h-[80vh] object-contain object-center rounded-3xl"
-              onLoad={() => setIsLoaded(true)}
+              className={`max-w-[92vw] max-h-[80vh] object-contain object-center rounded-3xl transition-all duration-500 ease-out ${
+                isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+              }`}
+              onLoad={() => {
+                setIsLoaded(true);
+                if (imageRef.current) {
+                  gsap.fromTo(imageRef.current, 
+                    { 
+                      scale: 1.05,
+                      opacity: 0.8
+                    },
+                    {
+                      scale: 1,
+                      opacity: 1,
+                      duration: 0.6,
+                      ease: 'power2.out'
+                    }
+                  );
+                }
+              }}
             />
           </div>
 
@@ -185,8 +251,8 @@ export const Slideshow: React.FC<SlideshowProps> = ({
         <ChevronRight className="h-5 w-5" />
       </Button>
 
-      {/* Thumbnail navigation */}
-      <div className="fixed right-4 md:right-6 bottom-4 md:bottom-6">
+      {/* Thumbnail navigation - Sticked to right */}
+      <div className="fixed right-0 top-0 bottom-0 w-16 md:w-20 flex items-center justify-center bg-gallery-bg border-l border-gallery-text/10">
         <ThumbnailNav
           images={images}
           currentIndex={currentIndex}

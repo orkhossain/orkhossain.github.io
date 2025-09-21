@@ -85,17 +85,21 @@ export const ThumbnailNav: React.FC<ThumbnailNavProps> = ({
   return (
     <div
       ref={containerRef}
-      className="fixed right-0  top-1/2 -translate-y-1/2 z-[60] w-20 md:w-24 h-[72vh]"
+      className="w-full h-full flex items-center justify-center"
     >
       <div
         ref={scrollRef}
-        className="absolute inset-0 overflow-y-auto no-scrollbar pr-5"
+        className="h-[80vh] overflow-y-auto no-scrollbar space-y-1 flex flex-col items-center"
       >
         {images.map((image, index) => (
           <div
             key={image.id}
             ref={el => (thumbnailRefs.current[index] = el)}
-            className={`relative w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden border transition-all duration-200 ${index === currentIndex ? 'border-black/50 dark:border-white/60 ring-2 ring-black/20 dark:ring-white/20 opacity-100' : 'border-black/10 dark:border-white/10 opacity-70 hover:opacity-100'}`}
+            className={`relative w-10 h-10 md:w-12 md:h-12 rounded-md overflow-hidden cursor-pointer transition-all duration-200 ${
+              index === currentIndex 
+                ? 'ring-2 ring-gallery-text/40 opacity-100 scale-110' 
+                : 'opacity-60 hover:opacity-100 hover:scale-105'
+            }`}
             onClick={() => onImageSelect(index)}
           >
             <img

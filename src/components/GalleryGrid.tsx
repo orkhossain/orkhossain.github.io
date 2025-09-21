@@ -52,52 +52,80 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }
     };
   }, [images]);
 
-  // Initial on-appear stagger animation
+  // Enhanced fade-in animation when gallery appears
   useEffect(() => {
     if (!allLoaded) return;
 
+    const container = containerRef.current;
+    const els = itemsRef.current.filter(Boolean) as HTMLDivElement[];
+    if (!els.length || !container) return;
+
+    // Set initial state for container and items
+    gsap.set(container, { opacity: 0 });
+    gsap.set(els, { 
+      opacity: 0, 
+      y: 80,
+      scale: 0.9,
+      rotationX: 15
+    });
+
+    // Main container fade in
+    const tl = gsap.timeline();
+    tl.to(container, { 
+      opacity: 1, 
+      duration: 0.6,
+      ease: 'power2.out'
+    });
+    
+    // Staggered gallery items animation with enhanced effects
+    tl.to(els, {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      rotationX: 0,
+      duration: 1.2,
+      stagger: {
+        amount: 0.8,
+        from: 'start',
+        ease: 'power2.out'
+      },
+      ease: 'power3.out',
+      clearProps: 'opacity,transform',
+    }, 0.3);
+  }, [allLoaded]);
+
+  // Scroll-triggered animations for items coming into view
+  useEffect(() => {
     const els = itemsRef.current.filter(Boolean) as HTMLDivElement[];
     if (!els.length) return;
 
-    // Initial hidden state
-    gsap.set(els, { opacity: 0, y: 30 });
-
-    // Animate in on page load
-    gsap.to(els, {
-      opacity: 1,
-      y: 0,
-      duration: 0.8,
-      ease: 'power3.out',
-      stagger: 0.08,
-      clearProps: 'opacity,transform',
-    });
-  }, [allLoaded]);
-
-  useEffect(() => {
-    if (itemsRef.current.length > 0) {
-      itemsRef.current.forEach((item) => {
-        if (!item) return;
-        gsap.fromTo(item,
-          { opacity: 0, y: 50 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 1,
-            ease: "power3.out",
-            scrollTrigger: {
-              trigger: item,
-              start: "top 80%",
-              toggleActions: "play none none reverse"
-            }
+    els.forEach((item, index) => {
+      gsap.fromTo(item,
+        { 
+          opacity: 0.3,
+          scale: 0.95,
+          y: 30
+        },
+        {
+          opacity: 1,
+          scale: 1,
+          y: 0,
+          duration: 0.8,
+          ease: 'power2.out',
+          scrollTrigger: {
+            trigger: item,
+            start: 'top 90%',
+            end: 'bottom 10%',
+            toggleActions: 'play none none reverse'
           }
-        );
-      });
-    }
+        }
+      );
+    });
 
     return () => {
       ScrollTrigger.getAll().forEach(trigger => trigger.kill());
     };
-  }, []);
+  }, [images]);
 
   return (
     <div className="p-1">
@@ -109,10 +137,10 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }
           <div
             key={image.id}
             ref={el => itemsRef.current[index] = el}
-            className="gallery-card cursor-pointer group break-inside-avoid mb-2"
+            className="gallery-item cursor-pointer group break-inside-avoid mb-2"
             onClick={() => onImageClick(index)}
           >
-            <div className="relative w-full overflow-hidden rounded-xl border border-black/10 dark:border-white/10 bg-white/50 dark:bg-white/5 backdrop-blur-sm">
+            <div className="relative w-full overflow-hidden rounded-xl bg-white/50 dark:bg-white/5 backdrop-blur-sm">
               <img
                 src={image.src}
                 alt={image.alt}
