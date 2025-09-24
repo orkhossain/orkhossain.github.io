@@ -101,10 +101,10 @@ export const Gallery: React.FC<GalleryProps> = ({ className = '' }) => {
 
       await Promise.all(loadPromises);
 
-      // Add a small delay for smooth transition
+      // Add a longer delay to showcase the beautiful loading screen
       setTimeout(() => {
         setIsLoading(false);
-      }, 500);
+      }, 3500); // Extended to 3.5 seconds after images load
     };
 
     preloadImages();

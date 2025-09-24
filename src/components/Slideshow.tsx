@@ -33,7 +33,6 @@ export const Slideshow: React.FC<SlideshowProps> = ({
   const isSeekingRef = useRef(false);
 
   const currentImageRef = useRef<HTMLImageElement>(null);
-  const prevImageRef = useRef<HTMLImageElement>(null);
   const slideshowRef = useRef<HTMLDivElement>(null);
   const counterRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -85,52 +84,17 @@ export const Slideshow: React.FC<SlideshowProps> = ({
   };
 
   const handleCloseSlideshow = () => {
-    // Animate out before closing
-    const tl = gsap.timeline({
-      onComplete: () => onClose()
-    });
-
-    tl.to(slideshowRef.current, {
-      opacity: 0,
-      scale: 0.95,
-      duration: 0.4,
-      ease: "power2.inOut"
-    })
-      .to([currentImageRef.current, prevImageRef.current], {
-        scale: 0.8,
-        opacity: 0,
-        duration: 0.3,
-        ease: "power2.inOut"
-      }, 0);
+    // Just close immediately
+    onClose();
   };
 
   const handlePrevious = () => {
     const newIndex = currentIndex > 0 ? currentIndex - 1 : images.length - 1;
-
-    // Add a subtle bounce to counter
-    gsap.to(counterRef.current, {
-      scale: 1.1,
-      duration: 0.1,
-      yoyo: true,
-      repeat: 1,
-      ease: "power2.inOut"
-    });
-
     onImageChange(newIndex);
   };
 
   const handleNext = () => {
     const newIndex = currentIndex < images.length - 1 ? currentIndex + 1 : 0;
-
-    // Add a subtle bounce to counter
-    gsap.to(counterRef.current, {
-      scale: 1.1,
-      duration: 0.1,
-      yoyo: true,
-      repeat: 1,
-      ease: "power2.inOut"
-    });
-
     onImageChange(newIndex);
   };
 
@@ -203,156 +167,34 @@ export const Slideshow: React.FC<SlideshowProps> = ({
     }
   }, [currentIndex]);
 
-  // Track if this is the first render
-  const isFirstRender = useRef(true);
-
-  // Enhanced image transition animation
+  // Simple image update without animations
   useEffect(() => {
-    if (!currentImageRef.current || !prevImageRef.current || images.length === 0) return;
+    if (!currentImageRef.current || images.length === 0) return;
 
     const currentEl = currentImageRef.current;
-    const prevEl = prevImageRef.current;
     const currentImage = images[currentIndex];
 
-    // Always set the current image source
+    // Simply set the current image source
     currentEl.src = currentImage?.src || "";
     currentEl.alt = currentImage?.alt || "";
 
-    // For the first render, just show the current image immediately
-    if (isFirstRender.current) {
-      gsap.set(prevEl, { opacity: 0, x: 0, scale: 1, rotationY: 0, zIndex: 1 });
-      gsap.set(currentEl, { opacity: 1, x: 0, scale: 1, rotationY: 0, zIndex: 2 });
-      isFirstRender.current = false;
-
-      // Animate progress bar
-      if (progressFillRef.current) {
-        gsap.to(progressFillRef.current, {
-          width: `${((currentIndex + 1) / images.length) * 100}%`,
-          duration: 0.6,
-          ease: "power2.out"
-        });
-      }
-      return;
-    }
-
-    // Set previous image source for transition
-    const prevIndex = (currentIndex - 1 + images.length) % images.length;
-    prevEl.src = images[prevIndex]?.src || "";
-    prevEl.alt = images[prevIndex]?.alt || "";
-
-    // Reset states for transition
-    gsap.set(prevEl, { opacity: 1, x: 0, scale: 1, rotationY: 0, zIndex: 1 });
-    gsap.set(currentEl, { opacity: 0, x: 400, scale: 0.8, rotationY: -15, zIndex: 2 });
-
-    // Create a more dynamic transition
-    const tl = gsap.timeline();
-
-    // Animate out the previous image with 3D rotation
-    tl.to(prevEl, {
-      opacity: 0,
-      x: -400,
-      scale: 0.8,
-      rotationY: 15,
-      duration: 0.9,
-      ease: "power3.inOut",
-    }, 0)
-
-      // Animate in the current image with bounce effect
-      .to(currentEl, {
-        opacity: 1,
-        x: 0,
-        scale: 1,
-        rotationY: 0,
-        duration: 0.9,
-        ease: "back.out(1.2)",
-      }, 0.1)
-
-      // Add a subtle glow effect
-      .to(currentEl, {
-        filter: "brightness(1.1) contrast(1.05)",
-        duration: 0.3,
-        yoyo: true,
-        repeat: 1,
-        ease: "power2.inOut"
-      }, 0.5);
-
-    // Animate progress bar
+    // Update progress bar without animation
     if (progressFillRef.current) {
-      gsap.to(progressFillRef.current, {
-        width: `${((currentIndex + 1) / images.length) * 100}%`,
-        duration: 0.6,
-        ease: "power2.out"
-      });
+      progressFillRef.current.style.width = `${((currentIndex + 1) / images.length) * 100}%`;
     }
   }, [currentIndex, images]);
 
-  // Initial entrance animation after loading
+  // Simple show slideshow after loading
   useEffect(() => {
     if (!slideshowRef.current || isLoading) return;
 
-    const tl = gsap.timeline({ delay: 0.2 });
-
-    // Set initial states
-    gsap.set([closeButtonRef.current, counterRef.current], { opacity: 0, y: -20 });
-    gsap.set(progressBarRef.current, { opacity: 0, y: 20 });
-
-    // Animate entrance with Japanese-inspired timing
-    tl.to(slideshowRef.current, {
-      opacity: 1,
-      duration: 0.8,
-      ease: "power3.out"
-    })
-      .to([closeButtonRef.current, counterRef.current], {
-        opacity: 1,
-        y: 0,
-        duration: 0.6,
-        stagger: 0.15,
-        ease: "power3.out"
-      }, 0.3)
-      .to(progressBarRef.current, {
-        opacity: 1,
-        y: 0,
-        duration: 0.6,
-        ease: "power3.out"
-      }, 0.6);
+    // Just show everything immediately
+    if (slideshowRef.current) {
+      slideshowRef.current.style.opacity = '1';
+    }
   }, [isLoading]);
 
-  // Magnetic cursor effect for navigation buttons
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      [leftNavRef.current, rightNavRef.current].forEach(button => {
-        if (!button) return;
-
-        const rect = button.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-
-        const deltaX = e.clientX - centerX;
-        const deltaY = e.clientY - centerY;
-        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-
-        if (distance < 100) {
-          const strength = (100 - distance) / 100;
-          gsap.to(button, {
-            x: deltaX * strength * 0.3,
-            y: deltaY * strength * 0.3,
-            duration: 0.3,
-            ease: "power2.out"
-          });
-        } else {
-          gsap.to(button, {
-            x: 0,
-            y: 0,
-            duration: 0.5,
-            ease: "power2.out"
-          });
-        }
-      });
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    return () => document.removeEventListener('mousemove', handleMouseMove);
-  }, []);
+  // Removed magnetic cursor effect
 
   const currentImage = images[currentIndex];
 
@@ -363,8 +205,7 @@ export const Slideshow: React.FC<SlideshowProps> = ({
       currentImage,
       imagesLength: images.length,
       isLoading,
-      currentImageSrc: currentImageRef.current?.src,
-      prevImageSrc: prevImageRef.current?.src
+      currentImageSrc: currentImageRef.current?.src
     });
   }, [currentIndex, currentImage, images.length, isLoading]);
 
@@ -390,8 +231,6 @@ export const Slideshow: React.FC<SlideshowProps> = ({
           variant="ghost"
           size="icon"
           onClick={handleCloseSlideshow}
-          onMouseEnter={() => gsap.to(closeButtonRef.current, { scale: 1.1, duration: 0.2, ease: "power2.out" })}
-          onMouseLeave={() => gsap.to(closeButtonRef.current, { scale: 1, duration: 0.2, ease: "power2.out" })}
           className="fixed top-6 left-6 w-12 h-12 z-[70] pointer-events-auto bg-white/15 dark:bg-black/25 backdrop-blur-xl border border-white/30 dark:border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.25)] hover:bg-white/25 dark:hover:bg-black/35 text-white dark:text-white transition-colors duration-300 rounded-full"
           aria-label="Close slideshow"
         >
@@ -419,24 +258,13 @@ export const Slideshow: React.FC<SlideshowProps> = ({
             <div className="relative overflow-hidden rounded-3xl isolate">
               <div className="relative w-full h-[80vh] flex items-center justify-center">
                 <img
-                  ref={prevImageRef}
-                  src=""
-                  alt=""
-                  className="absolute inset-0 w-full h-full object-contain object-center"
-                  draggable={false}
-                  style={{ opacity: 0, zIndex: 1 }}
-                  onLoad={() => console.log('Previous image loaded')}
-                  onError={() => console.log('Previous image error')}
-                />
-                <img
                   ref={currentImageRef}
-                  src=""
-                  alt=""
-                  className="absolute inset-0 w-full h-full object-contain object-center"
+                  src={currentImage?.src || ""}
+                  alt={currentImage?.alt || ""}
+                  className="w-full h-full object-contain object-center"
                   draggable={false}
-                  style={{ opacity: 1, zIndex: 2 }}
-                  onLoad={() => console.log('Current image loaded')}
-                  onError={() => console.log('Current image error')}
+                  onLoad={() => console.log('Image loaded:', currentImage?.src)}
+                  onError={() => console.log('Image error:', currentImage?.src)}
                 />
               </div>
             </div>
@@ -449,14 +277,6 @@ export const Slideshow: React.FC<SlideshowProps> = ({
           variant="ghost"
           size="icon"
           onClick={handlePrevious}
-          onMouseEnter={(e) => {
-            gsap.to(e.currentTarget, { scale: 1.2, duration: 0.3, ease: "back.out(1.5)" });
-            gsap.to(e.currentTarget.querySelector('svg'), { x: -5, duration: 0.3, ease: "power2.out" });
-          }}
-          onMouseLeave={(e) => {
-            gsap.to(e.currentTarget, { scale: 1, duration: 0.3, ease: "power2.out" });
-            gsap.to(e.currentTarget.querySelector('svg'), { x: 0, duration: 0.3, ease: "power2.out" });
-          }}
           className="fixed left-3 md:left-6 bottom-24 md:bottom-auto md:top-1/2 md:-translate-y-1/2 w-12 h-12 md:w-16 md:h-16 z-[80] flex items-center justify-center pointer-events-auto bg-transparent text-white hover:!bg-transparent active:!bg-transparent focus:!bg-transparent focus-visible:ring-0 hover:!text-white active:!text-white transition-none"
           aria-label="Previous image"
         >
@@ -468,14 +288,6 @@ export const Slideshow: React.FC<SlideshowProps> = ({
           variant="ghost"
           size="icon"
           onClick={handleNext}
-          onMouseEnter={(e) => {
-            gsap.to(e.currentTarget, { scale: 1.2, duration: 0.3, ease: "back.out(1.5)" });
-            gsap.to(e.currentTarget.querySelector('svg'), { x: 5, duration: 0.3, ease: "power2.out" });
-          }}
-          onMouseLeave={(e) => {
-            gsap.to(e.currentTarget, { scale: 1, duration: 0.3, ease: "power2.out" });
-            gsap.to(e.currentTarget.querySelector('svg'), { x: 0, duration: 0.3, ease: "power2.out" });
-          }}
           className="fixed right-3 md:right-28 bottom-24 md:bottom-auto md:top-1/2 md:-translate-y-1/2 w-12 h-12 md:w-16 md:h-16 z-[80] flex items-center justify-center pointer-events-auto bg-transparent text-white hover:!bg-transparent active:!bg-transparent focus:!bg-transparent focus-visible:ring-0 hover:!text-white active:!text-white transition-none"
           aria-label="Next image"
         >
@@ -500,8 +312,6 @@ export const Slideshow: React.FC<SlideshowProps> = ({
           onPointerDown={handleSeekPointerDown}
           onPointerMove={handleSeekPointerMove}
           onPointerUp={handleSeekPointerUp}
-          onMouseEnter={(e) => gsap.to(e.currentTarget, { scale: 1.05, duration: 0.2, ease: "power2.out" })}
-          onMouseLeave={(e) => gsap.to(e.currentTarget, { scale: 1, duration: 0.2, ease: "power2.out" })}
         >
           <div
             ref={progressFillRef}
