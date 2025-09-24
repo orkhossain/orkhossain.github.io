@@ -14,10 +14,37 @@ const queryClient = new QueryClient();
 
 const App = () => {
   const [loading, setLoading] = useState(true);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+
+  useEffect(() => {
+    const imgs = Array.from(document.images);
+    if (imgs.length === 0) {
+      setImagesLoaded(true);
+      return;
+    }
+    let loadedCount = 0;
+    imgs.forEach((img) => {
+      if (img.complete) {
+        loadedCount++;
+        if (loadedCount === imgs.length) setImagesLoaded(true);
+      } else {
+        img.addEventListener("load", () => {
+          loadedCount++;
+          if (loadedCount === imgs.length) setImagesLoaded(true);
+        });
+        img.addEventListener("error", () => {
+          loadedCount++;
+          if (loadedCount === imgs.length) setImagesLoaded(true);
+        });
+      }
+    });
+  }, []);
 
   useEffect(() => {
     // Hide loader on window load or after a short delay as fallback
-    const onReady = () => setLoading(false);
+    const onReady = () => {
+      if (imagesLoaded) setLoading(false);
+    };
     if (document.readyState === "complete") {
       onReady();
     } else {
@@ -28,7 +55,7 @@ const App = () => {
       window.removeEventListener("load", onReady);
       clearTimeout(fallback);
     };
-  }, []);
+  }, [imagesLoaded]);
 
   return (
     <>
@@ -50,17 +77,14 @@ const App = () => {
         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-white dark:bg-black">
           <div className="relative flex flex-col items-center gap-6">
             {/* Logo / Title */}
-            <div className="text-2xl md:text-3xl font-light tracking-widest text-black/80 dark:text-white/80">
-              ORK HOSSAIN
+            <div className="text-2xl md:text-3xl font-light tracking-widest text-black/80 dark:text-white/80 text-center px-4">
+              金継ぎのように、壊れたものを直すことで新しい美しさが生まれる。
             </div>
-            {/* Glass orb spinner */}
-            <div className="relative w-16 h-16 rounded-full border border-black/10 dark:border-white/10 bg-white/30 dark:bg-white/10 backdrop-blur-md">
-              <div className="absolute inset-2 rounded-full border-2 border-transparent border-t-black/60 dark:border-t-white/70 animate-spin"></div>
-              <div className="absolute -top-1 -left-1 w-8 h-8 rounded-full bg-white/40 dark:bg-white/20 blur-md"></div>
-            </div>
-            {/* Progress bar with shimmer */}
-            <div className="w-64 h-2 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
-              <div className="h-full w-1/3 animate-[shimmer_1.2s_ease_infinite] bg-gradient-to-r from-transparent via-black/40 to-transparent dark:via-white/60"></div>
+            {/* Pulsing circle */}
+            <div className="w-10 h-10 rounded-full bg-black/40 dark:bg-white/60 animate-ping"></div>
+            {/* Thin progress bar */}
+            <div className="w-40 h-1.5 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
+              <div className="h-full w-1/2 bg-black/50 dark:bg-white/60 animate-pulse"></div>
             </div>
             <div className="text-xs uppercase tracking-[0.3em] text-black/60 dark:text-white/60">Loading</div>
           </div>

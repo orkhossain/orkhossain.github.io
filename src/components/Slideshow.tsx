@@ -252,13 +252,13 @@ export const Slideshow: React.FC<SlideshowProps> = ({
               {/* Previous image layer */}
               <img
                 loading="lazy"
-                decoding="async"
-                sizes="(max-width: 768px) 90vw, 70vw"
+                // decoding="async"
+                // sizes="(max-width: 768px) 90vw, 70vw"
                 ref={prevImageRef}
-                src={images[prevIndex]?.src}
+                src={images[prevIndex]?.src.includes('/thumb/') ? images[prevIndex].src.replace('/thumb/', '/webp/') : images[prevIndex]?.src}
                 alt={images[prevIndex]?.alt || ''}
                 className="absolute inset-0 w-full h-full object-contain object-center select-none pointer-events-none transform-gpu shadow-none mix-blend-normal"
-                style={{ backfaceVisibility: 'hidden', willChange: 'transform, opacity' }}
+                // style={{ backfaceVisibility: 'hidden', willChange: 'transform, opacity' }}
                 draggable={false}
               />
               {/* Current image layer */}
@@ -270,11 +270,9 @@ export const Slideshow: React.FC<SlideshowProps> = ({
                 sizes="(max-width: 768px) 90vw, 70vw"
                 width={currentImage.width}
                 height={currentImage.height}
-                src={currentImage.src}
+                src={currentImage.src.includes('/thumb/') ? currentImage.src.replace('/thumb/', '/webp/') : currentImage.src}
                 alt={currentImage.alt}
-                className={`absolute inset-0 w-full h-full object-contain object-center bg-transparent select-none pointer-events-none transform-gpu shadow-none mix-blend-normal transition-opacity duration-700 ease-out ${
-                  isLoaded ? 'opacity-100' : 'opacity-0'
-                }`}
+                className={`absolute inset-0 w-full h-full object-contain object-center bg-transparent select-none pointer-events-none transform-gpu shadow-none mix-blend-normal transition-opacity duration-700 ease-out`}
                 style={{ backfaceVisibility: 'hidden', willChange: 'transform, opacity' }}
                 onLoad={() => {
                   setIsLoaded(true);
@@ -290,21 +288,6 @@ export const Slideshow: React.FC<SlideshowProps> = ({
             </div>
           )}
 
-          {/* Elegant image info */}
-          {/* {isLoaded && (currentImage.title || currentImage.description) && (
-            <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
-              {currentImage.title && (
-                <h3 className="text-xl md:text-3xl font-light tracking-wide text-black dark:text-white">
-                  {currentImage.title}
-                </h3>
-              )}
-              {currentImage.description && (
-                <p className="text-sm md:text-base text-black/70 dark:text-white/70 italic">
-                  {currentImage.description}
-                </p>
-              )}
-            </div>
-          )} */}
         </div>
       </div>
 
@@ -334,33 +317,15 @@ export const Slideshow: React.FC<SlideshowProps> = ({
       {/* Thumbnail navigation - Sticked to right (md+) */}
       <div className="fixed right-0 top-0 bottom-0 w-16 md:w-20 flex items-center justify-center bg-gallery-bg z-[40] md:flex hidden">
         <ThumbnailNav
-          images={images}
+          images={images.map(img => ({
+            ...img,
+            src: img.src.replace('/webp/', '/thumb/')
+          }))}
           currentIndex={currentIndex}
           onImageSelect={onImageChange}
         />
       </div>
 
-      {/* Mobile bottom bar thumbnail nav */}
-      <div className="fixed left-0 right-0 bottom-0 z-[60] md:hidden bg-gallery-bg/95 backdrop-blur border-t border-white/10">
-        <div className="overflow-x-auto overflow-y-hidden" ref={bottomNavRef} data-thumb-scroll>
-          <div className="flex flex-row w-max">
-            {images.map((img, idx) => (
-              <button
-                key={img.id}
-                onClick={() => onImageChange(idx)}
-                className={`flex-shrink-0 w-12 h-12 overflow-hidden outline-none ${idx === currentIndex ? 'ring-2 ring-primary' : ''}`}
-              >
-                <img
-                  src={img.src}
-                  alt={img.alt}
-                  className={`w-full h-full object-cover transition-opacity duration-300 ${idx === currentIndex ? 'opacity-100' : 'opacity-50 hover:opacity-75'}`}
-                  draggable={false}
-                />
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
 
       <div
         ref={seekBarRef}

@@ -131,3 +131,4 @@ dist
 .yarn/install-state.gz
 .pnp.*
 public/gallery/webp/Image1.webp
+public/gallery/thumb

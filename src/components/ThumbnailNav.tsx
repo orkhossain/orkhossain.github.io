@@ -20,6 +20,7 @@ export const ThumbnailNav: React.FC<ThumbnailNavProps> = ({
   const handleRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const bottomNavRef = useRef<HTMLDivElement>(null);
 
   const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
   const updateFromClientY = (clientY: number) => {
@@ -83,8 +84,9 @@ export const ThumbnailNav: React.FC<ThumbnailNavProps> = ({
   }, []);
 
   return (
+    <>
     <div
-      ref={containerRef}
+      ref={containerRef} 
       className="w-full h-full flex items-center justify-end overflow-hidden relative"
     >
       <div
@@ -95,23 +97,42 @@ export const ThumbnailNav: React.FC<ThumbnailNavProps> = ({
           <div
             key={image.id}
             ref={el => (thumbnailRefs.current[index] = el)}
-            className={`relative w-10 h-10 md:w-12 md:h-12 rounded-md overflow-hidden cursor-pointer transition-all duration-200 ${
-              index === currentIndex 
-                ? 'opacity-100' 
-                : 'opacity-20 hover:opacity-100 '
-            }`}
+            className={`relative w-10 h-10 md:w-12 md:h-12 rounded-md overflow-hidden cursor-pointer transition-all duration-200 ${index === currentIndex
+                ? 'opacity-100'
+                : 'opacity-20 hover:opacity-100 '}`}
             onClick={() => onImageSelect(index)}
           >
             <img
               src={image.src}
               alt={image.alt}
               className="w-full h-full object-cover object-center aspect-square"
-              loading="lazy"
-            />
+              loading="lazy" />
           </div>
         ))}
       </div>
     </div>
+    
+    <div className="fixed left-0 right-0 bottom-0 z-[60] md:hidden bg-gallery-bg/95 backdrop-blur border-t border-white/10">
+        <div className="overflow-x-auto overflow-y-hidden" ref={bottomNavRef} data-thumb-scroll>
+          <div className="flex flex-row w-max">
+            {images.map((img, idx) => (
+              <button
+                key={img.id}
+                onClick={() => onImageSelect(idx)}
+                className={`flex-shrink-0 w-12 h-12 overflow-hidden outline-none ${idx === currentIndex ? 'ring-2 ring-primary' : ''}`}
+              >
+                <img
+                  src={img.src.replace('/webp/', '/thumb/')}
+                  alt={img.alt}
+                  className={`w-full h-full object-cover transition-opacity duration-300 ${idx === currentIndex ? 'opacity-100' : 'opacity-50 hover:opacity-75'}`}
+                  draggable={false} />
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+      
+      </>
 
     
   );
