@@ -283,10 +283,10 @@ export const Slideshow: React.FC<SlideshowProps> = ({
       <div
         ref={slideshowRef}
         className="fixed inset-0 z-50 bg-gallery-bg backdrop-blur-sm font-elegant overflow-hidden overscroll-none"
-        style={{ opacity: isLoading ? 0 : 1 }}
+        style={{ opacity: isLoading ? 0 : 1, overflowY: 'hidden' }}
       >
         {/* Particle Background */}
-        <ParticleBackground isActive={!isLoading} />
+        <ParticleBackground isActive={isLoading} />
 
         {/* Close button */}
         <Button
@@ -358,8 +358,8 @@ export const Slideshow: React.FC<SlideshowProps> = ({
           <ChevronRight className="h-10 w-10" />
         </Button>
 
-        {/* Thumbnail navigation - Sticked to right (md+) */}
-        <div className="fixed right-0 top-0 bottom-0 w-16 md:w-20 flex items-center justify-center bg-gallery-bg z-[40] md:flex hidden" ref={bottomNavRef}>
+        {/* Thumbnail navigation - Right side on desktop, bottom on mobile */}
+        <div className="fixed right-0 top-0 bottom-0 w-16 md:w-20 hidden md:flex items-center justify-center bg-gallery-bg z-[40]" ref={bottomNavRef}>
           <ThumbnailNav
             images={images.map(img => ({
               ...img,
@@ -367,6 +367,19 @@ export const Slideshow: React.FC<SlideshowProps> = ({
             }))}
             currentIndex={currentIndex}
             onImageSelect={onImageChange}
+          />
+        </div>
+
+        {/* Mobile thumbnail navigation - Bottom horizontal strip */}
+        <div className="fixed bottom-0 left-0 right-0 h-16 flex md:hidden items-center justify-center bg-gallery-bg/80 backdrop-blur-sm z-[40]">
+          <ThumbnailNav
+            images={images.map(img => ({
+              ...img,
+              src: img.src.replace('/webp/', '/thumb/')
+            }))}
+            currentIndex={currentIndex}
+            onImageSelect={onImageChange}
+            isMobile={true}
           />
         </div>
 

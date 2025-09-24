@@ -2,7 +2,7 @@ import { Gallery } from '@/components/Gallery';
 
 const Index = () => {
   return (
-    <div className="min-h-screen p-3">
+    <div className="min-h-screen">
       <Gallery />
     </div>
   );

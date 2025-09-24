@@ -132,7 +132,7 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }
   }, [images]);
 
   return (
-    <div className="p-1">
+    <div className="p-3">
       <div
         ref={containerRef}
         className="max-w-screen-3xl mx-auto columns-2 md:columns-3 lg:columns-6 gap-6 [column-fill:_balance]"
