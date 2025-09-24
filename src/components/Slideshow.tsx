@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { gsap } from 'gsap';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { GalleryImage } from './Gallery';
@@ -18,18 +17,8 @@ export const Slideshow: React.FC<SlideshowProps> = ({
   onClose,
   onImageChange,
 }) => {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const [autoPlay, setAutoPlay] = useState(true);
   const AUTO_PLAY_INTERVAL = 4000; // ms
-  const containerRef = useRef<HTMLDivElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const prevImageRef = useRef<HTMLImageElement>(null);
-  const transitionTl = useRef<gsap.core.Timeline | null>(null);
-
-  const [prevIndex, setPrevIndex] = useState(currentIndex);
-  const [dir, setDir] = useState<1 | -1>(1);
 
   const touchStartX = useRef<number | null>(null);
   const touchDeltaX = useRef<number>(0);
@@ -86,23 +75,13 @@ export const Slideshow: React.FC<SlideshowProps> = ({
   };
 
   const handlePrevious = () => {
-    if (isTransitioning) return;
-    setIsTransitioning(true);
-    setDir(-1);
     const newIndex = currentIndex > 0 ? currentIndex - 1 : images.length - 1;
-    setPrevIndex(currentIndex);
     onImageChange(newIndex);
-    setTimeout(() => setIsTransitioning(false), 500);
   };
 
   const handleNext = () => {
-    if (isTransitioning) return;
-    setIsTransitioning(true);
-    setDir(1);
     const newIndex = currentIndex < images.length - 1 ? currentIndex + 1 : 0;
-    setPrevIndex(currentIndex);
     onImageChange(newIndex);
-    setTimeout(() => setIsTransitioning(false), 500);
   };
 
   const handleKeyPress = (e: KeyboardEvent) => {
@@ -128,55 +107,16 @@ export const Slideshow: React.FC<SlideshowProps> = ({
   useEffect(() => {
     if (!autoPlay) return;
     const id = setInterval(() => {
-      if (!isTransitioning) {
-        handleNext();
-      }
+      handleNext();
     }, AUTO_PLAY_INTERVAL);
     return () => clearInterval(id);
-  }, [autoPlay, isTransitioning, currentIndex]);
+  }, [autoPlay, currentIndex]);
 
   useEffect(() => {
     const onVis = () => setAutoPlay(!document.hidden);
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
   }, []);
-
-  useEffect(() => {
-    setIsLoaded(false);
-
-    if (!imageRef.current || !prevImageRef.current) return;
-
-    // Kill any previous animation to avoid race conditions / flicker
-    if (transitionTl.current) {
-      transitionTl.current.kill();
-      transitionTl.current = null;
-    }
-
-    const incoming = imageRef.current;
-    const outgoing = prevImageRef.current;
-
-    const fromX = dir === 1 ? 120 : -120;
-    const toX = dir === 1 ? -120 : 120;
-
-    gsap.set([incoming, outgoing], { force3D: true, visibility: 'visible' });
-
-    // Prepare layers (no rotateY to avoid backface glitches)
-    gsap.set(incoming, { x: fromX, opacity: 0 });
-    gsap.set(outgoing, { x: 0, opacity: 0 });
-
-    const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
-    transitionTl.current = tl;
-
-    tl.to(outgoing, { x: toX, opacity: 0, duration: 0.32, ease: 'power2.in' })
-      .to(incoming, { x: 0, opacity: 1, duration: 0.42 }, '<')
-      .add(() => {
-        // Hide and reset the outgoing layer to prevent shadow trails
-        gsap.set(outgoing, { visibility: 'hidden', x: 0, opacity: 0, clearProps: 'transform' });
-        // Ensure incoming is fully visible and no residual transform
-        gsap.set(incoming, { visibility: 'visible', opacity: 1, clearProps: 'transform' });
-        transitionTl.current = null;
-      });
-  }, [currentIndex, dir]);
 
   useEffect(() => {
     // Preload current image via <link rel="preload"> for faster fetch
@@ -217,7 +157,6 @@ export const Slideshow: React.FC<SlideshowProps> = ({
 
   return (
     <div 
-      ref={overlayRef}
       className="fixed inset-0 z-50 bg-gallery-bg backdrop-blur-sm font-elegant overflow-hidden overscroll-none"
     >
       {/* Close button */}
@@ -238,7 +177,6 @@ export const Slideshow: React.FC<SlideshowProps> = ({
 
       {/* Main image container */}
       <div 
-        ref={containerRef}
         className="absolute inset-0 flex items-center justify-center px-4 md:px-8 overflow-hidden"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -249,45 +187,14 @@ export const Slideshow: React.FC<SlideshowProps> = ({
         <div className="relative w-[90vw] max-h-full mx-auto flex justify-center">
           <div className="relative overflow-hidden rounded-3xl isolate">
             <div className="relative w-full h-[80vh] flex items-center justify-center">
-              {/* Previous image layer */}
               <img
-                loading="lazy"
-                // decoding="async"
-                // sizes="(max-width: 768px) 90vw, 70vw"
-                ref={prevImageRef}
-                src={images[prevIndex]?.src.includes('/thumb/') ? images[prevIndex].src.replace('/thumb/', '/webp/') : images[prevIndex]?.src}
-                alt={images[prevIndex]?.alt || ''}
-                className="absolute inset-0 w-full h-full object-contain object-center select-none pointer-events-none transform-gpu shadow-none mix-blend-normal"
-                // style={{ backfaceVisibility: 'hidden', willChange: 'transform, opacity' }}
-                draggable={false}
-              />
-              {/* Current image layer */}
-              <img
-                ref={imageRef}
-                loading="eager"
-                decoding="async"
-                fetchPriority="high"
-                sizes="(max-width: 768px) 90vw, 70vw"
-                width={currentImage.width}
-                height={currentImage.height}
                 src={currentImage.src.includes('/thumb/') ? currentImage.src.replace('/thumb/', '/webp/') : currentImage.src}
                 alt={currentImage.alt}
-                className={`absolute inset-0 w-full h-full object-contain object-center bg-transparent select-none pointer-events-none transform-gpu shadow-none mix-blend-normal transition-opacity duration-700 ease-out`}
-                style={{ backfaceVisibility: 'hidden', willChange: 'transform, opacity' }}
-                onLoad={() => {
-                  setIsLoaded(true);
-                }}
+                className="w-full h-full object-contain object-center select-none pointer-events-none"
                 draggable={false}
               />
             </div>
           </div>
-
-          {!isLoaded && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gallery-surface rounded-2xl">
-              <div className="w-8 h-8 border-2 border-primary/30 rounded-full animate-spin border-t-primary"></div>
-            </div>
-          )}
-
         </div>
       </div>
 
@@ -296,8 +203,7 @@ export const Slideshow: React.FC<SlideshowProps> = ({
         variant="ghost"
         size="icon"
         onClick={handlePrevious}
-        disabled={isTransitioning}
-        className="fixed left-3 md:left-6 bottom-24 md:bottom-auto md:top-1/2 md:-translate-y-1/2 w-12 h-12 md:w-16 md:h-16 z-[80] flex items-center justify-center pointer-events-auto bg-transparent text-white hover:!bg-transparent active:!bg-transparent focus:!bg-transparent focus-visible:ring-0 hover:!text-white active:!text-white transition-none disabled:opacity-40 disabled:pointer-events-none"
+        className="fixed left-3 md:left-6 bottom-24 md:bottom-auto md:top-1/2 md:-translate-y-1/2 w-12 h-12 md:w-16 md:h-16 z-[80] flex items-center justify-center pointer-events-auto bg-transparent text-white hover:!bg-transparent active:!bg-transparent focus:!bg-transparent focus-visible:ring-0 hover:!text-white active:!text-white transition-none"
         aria-label="Previous image"
       >
         <ChevronLeft className="h-10 w-10" />
@@ -307,15 +213,14 @@ export const Slideshow: React.FC<SlideshowProps> = ({
         variant="ghost"
         size="icon"
         onClick={handleNext}
-        disabled={isTransitioning}
-        className="fixed right-3 md:right-28 bottom-24 md:bottom-auto md:top-1/2 md:-translate-y-1/2 w-12 h-12 md:w-16 md:h-16 z-[80] flex items-center justify-center pointer-events-auto bg-transparent text-white hover:!bg-transparent active:!bg-transparent focus:!bg-transparent focus-visible:ring-0 hover:!text-white active:!text-white transition-none disabled:opacity-40 disabled:pointer-events-none"
+        className="fixed right-3 md:right-28 bottom-24 md:bottom-auto md:top-1/2 md:-translate-y-1/2 w-12 h-12 md:w-16 md:h-16 z-[80] flex items-center justify-center pointer-events-auto bg-transparent text-white hover:!bg-transparent active:!bg-transparent focus:!bg-transparent focus-visible:ring-0 hover:!text-white active:!text-white transition-none"
         aria-label="Next image"
       >
         <ChevronRight className="h-10 w-10" />
       </Button>
 
       {/* Thumbnail navigation - Sticked to right (md+) */}
-      <div className="fixed right-0 top-0 bottom-0 w-16 md:w-20 flex items-center justify-center bg-gallery-bg z-[40] md:flex hidden">
+      <div className="fixed right-0 top-0 bottom-0 w-16 md:w-20 flex items-center justify-center bg-gallery-bg z-[40] md:flex hidden" ref={bottomNavRef}>
         <ThumbnailNav
           images={images.map(img => ({
             ...img,
@@ -325,7 +230,6 @@ export const Slideshow: React.FC<SlideshowProps> = ({
           onImageSelect={onImageChange}
         />
       </div>
-
 
       <div
         ref={seekBarRef}
