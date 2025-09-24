@@ -167,20 +167,83 @@ export const Slideshow: React.FC<SlideshowProps> = ({
     }
   }, [currentIndex]);
 
-  // Simple image update without animations
+  // Track if this is the first render to avoid double flash
+  const isFirstRender = useRef(true);
+
+  // Smooth fade transition when switching images
   useEffect(() => {
     if (!currentImageRef.current || images.length === 0) return;
 
     const currentEl = currentImageRef.current;
     const currentImage = images[currentIndex];
 
-    // Simply set the current image source
-    currentEl.src = currentImage?.src || "";
-    currentEl.alt = currentImage?.alt || "";
+    // For first render, just set the image without animation
+    if (isFirstRender.current) {
+      currentEl.src = currentImage?.src || "";
+      currentEl.alt = currentImage?.alt || "";
+      currentEl.style.opacity = "1";
+      currentEl.style.transform = "scale(1)";
+      isFirstRender.current = false;
 
-    // Update progress bar without animation
+      // Update progress bar for first render
+      if (progressFillRef.current) {
+        progressFillRef.current.style.width = `${((currentIndex + 1) / images.length) * 100}%`;
+      }
+      return;
+    }
+
+    // Preload the new image first
+    const newImg = new Image();
+    newImg.onload = () => {
+      // Cool fade out with subtle scale down
+      gsap.to(currentEl, {
+        opacity: 0,
+        scale: 0.95,
+        duration: 0.3,
+        ease: "power2.inOut",
+        onComplete: () => {
+          // Change the image source (image is already loaded)
+          currentEl.src = currentImage?.src || "";
+          currentEl.alt = currentImage?.alt || "";
+
+          // Cool fade in with scale up and bounce
+          gsap.fromTo(currentEl,
+            {
+              opacity: 0,
+              scale: 1.05
+            },
+            {
+              opacity: 1,
+              scale: 1,
+              duration: 0.5,
+              ease: "back.out(1.2)"
+            }
+          );
+        }
+      });
+    };
+
+    // Start preloading
+    newImg.src = currentImage?.src || "";
+
+    // Smooth progress bar animation
     if (progressFillRef.current) {
-      progressFillRef.current.style.width = `${((currentIndex + 1) / images.length) * 100}%`;
+      gsap.to(progressFillRef.current, {
+        width: `${((currentIndex + 1) / images.length) * 100}%`,
+        duration: 0.6,
+        ease: "power2.out"
+      });
+    }
+
+    // Subtle counter bounce animation
+    if (counterRef.current) {
+      gsap.to(counterRef.current, {
+        scale: 1.1,
+        duration: 0.15,
+        ease: "power2.out",
+        yoyo: true,
+        repeat: 1
+      });
     }
   }, [currentIndex, images]);
 
@@ -259,12 +322,13 @@ export const Slideshow: React.FC<SlideshowProps> = ({
               <div className="relative w-full h-[80vh] flex items-center justify-center">
                 <img
                   ref={currentImageRef}
-                  src={currentImage?.src || ""}
-                  alt={currentImage?.alt || ""}
+                  src=""
+                  alt=""
                   className="w-full h-full object-contain object-center"
                   draggable={false}
-                  onLoad={() => console.log('Image loaded:', currentImage?.src)}
-                  onError={() => console.log('Image error:', currentImage?.src)}
+                  style={{ opacity: 0 }}
+                  onLoad={() => console.log('Image loaded:', currentImageRef.current?.src)}
+                  onError={() => console.log('Image error:', currentImageRef.current?.src)}
                 />
               </div>
             </div>
