@@ -72,24 +72,8 @@ const App = () => {
           </BrowserRouter>
         </TooltipProvider>
       </QueryClientProvider>
-      { /* Full-screen loading page */ }
-      {loading && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-white dark:bg-black">
-          <div className="relative flex flex-col items-center gap-6">
-            {/* Logo / Title */}
-            <div className="text-2xl md:text-3xl font-light tracking-widest text-black/80 dark:text-white/80 text-center px-4">
-              金継ぎのように、壊れたものを直すことで新しい美しさが生まれる。
-            </div>
-            {/* Pulsing circle */}
-            <div className="w-10 h-10 rounded-full bg-black/40 dark:bg-white/60 animate-ping"></div>
-            {/* Thin progress bar */}
-            <div className="w-40 h-1.5 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
-              <div className="h-full w-1/2 bg-black/50 dark:bg-white/60 animate-pulse"></div>
-            </div>
-            <div className="text-xs uppercase tracking-[0.3em] text-black/60 dark:text-white/60">Loading</div>
-          </div>
-        </div>
-      )}
+      { /* Full-screen loading page */}
+
     </>
   );
 }

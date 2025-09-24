@@ -64,36 +64,38 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }
 
     // Set initial state for container and items
     gsap.set(container, { opacity: 0 });
-    gsap.set(els, { 
-      opacity: 0, 
-      y: 80,
-      scale: 0.9,
-      rotationX: 15
+    gsap.set(els, {
+      opacity: 0,
+      y: 100,
+      scale: 0.8,
+      rotationX: 20,
+      rotationY: 10
     });
 
     // Main container fade in
     const tl = gsap.timeline();
-    tl.to(container, { 
-      opacity: 1, 
-      duration: 0.6,
+    tl.to(container, {
+      opacity: 1,
+      duration: 0.8,
       ease: 'power2.out'
     });
-    
-    // Staggered gallery items animation with enhanced effects
+
+    // Staggered gallery items animation with enhanced 3D effects
     tl.to(els, {
       opacity: 1,
       y: 0,
       scale: 1,
       rotationX: 0,
-      duration: 1.2,
+      rotationY: 0,
+      duration: 1.4,
       stagger: {
-        amount: 0.8,
-        from: 'start',
+        amount: 1.2,
+        from: 'random',
         ease: 'power2.out'
       },
-      ease: 'power3.out',
+      ease: 'back.out(1.2)',
       clearProps: 'opacity,transform',
-    }, 0.3);
+    }, 0.4);
   }, [allLoaded]);
 
   // Scroll-triggered animations for items coming into view
@@ -103,7 +105,7 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }
 
     els.forEach((item, index) => {
       gsap.fromTo(item,
-        { 
+        {
           opacity: 0.3,
           scale: 0.95,
           y: 30
@@ -130,8 +132,8 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }
   }, [images]);
 
   return (
-    <div className="p-1">
-      <div 
+    <div className="p-3">
+      <div
         ref={containerRef}
         className="max-w-screen-3xl mx-auto columns-2 md:columns-3 lg:columns-6 gap-6 [column-fill:_balance]"
       >
@@ -149,7 +151,7 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }
                 className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-[1.02]"
                 loading="lazy"
               />
-              
+
               {/* Elegant overlay */}
               <div className="gallery-overlay">
                 <div className="absolute bottom-0 left-0 right-0 p-2 md:p-3">

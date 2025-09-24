@@ -6,16 +6,18 @@ interface ThumbnailNavProps {
   images: GalleryImage[];
   currentIndex: number;
   onImageSelect: (index: number) => void;
+  isMobile?: boolean;
 }
 
 export const ThumbnailNav: React.FC<ThumbnailNavProps> = ({
   images,
   currentIndex,
   onImageSelect,
+  isMobile = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const thumbnailRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const thumbnailRefs = useRef<(HTMLElement | null)[]>([]);
   const trackRef = useRef<HTMLDivElement>(null);
   const handleRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
@@ -54,13 +56,13 @@ export const ThumbnailNav: React.FC<ThumbnailNavProps> = ({
     if (scrollRef.current && thumbnailRefs.current[currentIndex]) {
       const container = scrollRef.current;
       const thumbnail = thumbnailRefs.current[currentIndex];
-      
+
       if (thumbnail) {
         const containerHeight = container.clientHeight;
         const thumbnailTop = thumbnail.offsetTop;
         const thumbnailHeight = thumbnail.clientHeight;
         const scrollTop = thumbnailTop - (containerHeight / 2) + (thumbnailHeight / 2);
-        
+
         gsap.to(container, {
           scrollTop: Math.max(0, scrollTop),
           duration: 0.6,
@@ -83,10 +85,38 @@ export const ThumbnailNav: React.FC<ThumbnailNavProps> = ({
     };
   }, []);
 
+  // Mobile horizontal layout
+  if (isMobile) {
+    return (
+      <div className="w-full overflow-x-auto overflow-y-hidden" data-thumb-scroll>
+        <div className="flex flex-row justify-center min-w-max px-4">
+          {images.map((image, index) => (
+            <button
+              key={image.id}
+              ref={el => (thumbnailRefs.current[index] = el)}
+              className={`flex-shrink-0 w-12 h-12 overflow-hidden cursor-pointer transition-all duration-200 ${index === currentIndex
+                ? 'opacity-100 ring-2 ring-white/50'
+                : 'opacity-40 hover:opacity-80'
+                }`}
+              onClick={() => onImageSelect(index)}
+            >
+              <img
+                src={image.src}
+                alt={image.alt}
+                className="w-full h-full object-cover object-center"
+                loading="lazy"
+              />
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop vertical layout
   return (
-    <>
     <div
-      ref={containerRef} 
+      ref={containerRef}
       className="w-full h-full flex items-center justify-end overflow-hidden relative"
     >
       <div
@@ -98,42 +128,20 @@ export const ThumbnailNav: React.FC<ThumbnailNavProps> = ({
             key={image.id}
             ref={el => (thumbnailRefs.current[index] = el)}
             className={`relative w-10 h-10 md:w-12 md:h-12 rounded-md overflow-hidden cursor-pointer transition-all duration-200 ${index === currentIndex
-                ? 'opacity-100'
-                : 'opacity-20 hover:opacity-100 '}`}
+              ? 'opacity-100'
+              : 'opacity-20 hover:opacity-100'
+              }`}
             onClick={() => onImageSelect(index)}
           >
             <img
               src={image.src}
               alt={image.alt}
               className="w-full h-full object-cover object-center aspect-square"
-              loading="lazy" />
+              loading="lazy"
+            />
           </div>
         ))}
       </div>
     </div>
-    
-    <div className="fixed left-0 right-0 bottom-0 z-[60] md:hidden bg-gallery-bg/95 backdrop-blur border-t border-white/10">
-        <div className="overflow-x-auto overflow-y-hidden" ref={bottomNavRef} data-thumb-scroll>
-          <div className="flex flex-row w-max">
-            {images.map((img, idx) => (
-              <button
-                key={img.id}
-                onClick={() => onImageSelect(idx)}
-                className={`flex-shrink-0 w-12 h-12 overflow-hidden outline-none ${idx === currentIndex ? 'ring-2 ring-primary' : ''}`}
-              >
-                <img
-                  src={img.src.replace('/webp/', '/thumb/')}
-                  alt={img.alt}
-                  className={`w-full h-full object-cover transition-opacity duration-300 ${idx === currentIndex ? 'opacity-100' : 'opacity-50 hover:opacity-75'}`}
-                  draggable={false} />
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-      
-      </>
-
-    
   );
 };
