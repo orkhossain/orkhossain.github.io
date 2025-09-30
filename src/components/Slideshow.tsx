@@ -322,14 +322,13 @@ export const Slideshow: React.FC<SlideshowProps> = ({
               <div className="relative w-full h-[80vh] flex items-center justify-center">
                 <img
                   ref={currentImageRef}
+                  loading="lazy"
                   src=""
                   alt=""
                   className="w-full h-full object-contain object-center"
                   draggable={false}
                   style={{ opacity: 0 }}
-                  onLoad={() => console.log('Image loaded:', currentImageRef.current?.src)}
-                  onError={() => console.log('Image error:', currentImageRef.current?.src)}
-                />
+                  />
               </div>
             </div>
           </div>
