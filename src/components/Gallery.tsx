@@ -5,7 +5,7 @@ import { GalleryGrid } from './GalleryGrid';
 import { Slideshow } from './Slideshow';
 import { LoadingScreen } from './LoadingScreen';
 import { Button } from '@/components/ui/button';
-import { Play, Grid, Shuffle } from 'lucide-react';
+import { Play, Shuffle } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -119,6 +119,8 @@ export const Gallery: React.FC<GalleryProps> = ({ className = '' }) => {
     }
   }, [isLoading]);
 
+
+
   return (
     <>
       <LoadingScreen
@@ -132,31 +134,31 @@ export const Gallery: React.FC<GalleryProps> = ({ className = '' }) => {
         className={`min-h-screen bg-gallery-bg font-elegant ${className}`}
         style={{ opacity: isLoading ? 0 : 1 }}
       >
-        {/* Enhanced Floating Controls */}
+        {/* Always Visible Floating Controls */}
         {!isSlideshow && !isLoading && (
-          <div className="fixed top-8 right-8 z-50 flex flex-col gap-3">
+          <div className="floating-controls">
             <Button
               onClick={startSlideshow}
-              className="rounded-full w-14 h-14 p-0 bg-white/20 dark:bg-black/20 backdrop-blur-md border border-white/30 shadow-lg hover:bg-white/30 dark:hover:bg-black/30 transition-all duration-300 hover:scale-110"
+              className="relative rounded-full w-14 h-14 p-0 bg-white/25 dark:bg-black/30 backdrop-blur-xl border border-white/40 dark:border-white/20 shadow-2xl hover:bg-white/35 dark:hover:bg-black/40 transition-all duration-300 text-black dark:text-white"
               aria-label="Start slideshow"
-              onMouseEnter={(e) => gsap.to(e.currentTarget, { scale: 1.1, duration: 0.2 })}
-              onMouseLeave={(e) => gsap.to(e.currentTarget, { scale: 1, duration: 0.2 })}
+              onMouseEnter={(e) => gsap.to(e.currentTarget, { scale: 1.1, duration: 0.2, ease: 'power2.out' })}
+              onMouseLeave={(e) => gsap.to(e.currentTarget, { scale: 1, duration: 0.2, ease: 'power2.out' })}
             >
-              <Play className="h-5 w-5" />
+              <Play className="h-5 w-5 ml-0.5" fill="currentColor" />
             </Button>
 
             <Button
               onClick={shuffleSlideshow}
-              className="rounded-full w-14 h-14 p-0 bg-white/20 dark:bg-black/20 backdrop-blur-md border border-white/30 shadow-lg hover:bg-white/30 dark:hover:bg-black/30 transition-all duration-300"
+              className="relative rounded-full w-14 h-14 p-0 bg-white/25 dark:bg-black/30 backdrop-blur-xl border border-white/40 dark:border-white/20 shadow-2xl hover:bg-white/35 dark:hover:bg-black/40 transition-all duration-300 text-black dark:text-white"
               aria-label="Random slideshow"
-              onMouseEnter={(e) => gsap.to(e.currentTarget, { scale: 1.1, duration: 0.2 })}
-              onMouseLeave={(e) => gsap.to(e.currentTarget, { scale: 1, duration: 0.2 })}
+              onMouseEnter={(e) => gsap.to(e.currentTarget, { scale: 1.1, duration: 0.2, ease: 'power2.out' })}
+              onMouseLeave={(e) => gsap.to(e.currentTarget, { scale: 1, duration: 0.2, ease: 'power2.out' })}
             >
               <Shuffle className="h-5 w-5" />
             </Button>
 
-            {/* Stats Badge */}
-            <div className="bg-white/10 dark:bg-black/10 backdrop-blur-md border border-white/20 rounded-full px-3 py-1 text-xs text-white/70 text-center">
+            {/* Enhanced Stats Badge */}
+            <div className="bg-white/20 dark:bg-black/25 backdrop-blur-xl border border-white/30 dark:border-white/15 rounded-full px-3 py-1.5 text-xs font-medium text-black/80 dark:text-white/80 text-center shadow-lg">
               {GALLERY_IMAGES.length} photos
             </div>
           </div>

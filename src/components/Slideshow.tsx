@@ -133,28 +133,54 @@ export const Slideshow: React.FC<SlideshowProps> = ({
   }, []);
 
   useEffect(() => {
-    // Preload current image via <link rel="preload"> for faster fetch
-    const link = document.createElement('link');
-    link.rel = 'preload';
-    link.as = 'image';
-    link.href = images[currentIndex]?.src;
-    document.head.appendChild(link);
+    // Enhanced preloading strategy
+    const preloadLinks: HTMLLinkElement[] = [];
 
-    // Preload neighbors using Image()
-    const nextIdx = (currentIndex + 1) % images.length;
-    const prevIdx = (currentIndex - 1 + images.length) % images.length;
-    const nextImg = new Image();
-    const prevImg = new Image();
-    nextImg.decoding = 'async';
-    prevImg.decoding = 'async';
-    nextImg.loading = 'eager';
-    prevImg.loading = 'eager';
-    nextImg.src = images[nextIdx]?.src || '';
-    prevImg.src = images[prevIdx]?.src || '';
+    // Preload current image with highest priority
+    const currentLink = document.createElement('link');
+    currentLink.rel = 'preload';
+    currentLink.as = 'image';
+    currentLink.href = images[currentIndex]?.src;
+    currentLink.fetchPriority = 'high';
+    document.head.appendChild(currentLink);
+    preloadLinks.push(currentLink);
+
+    // Preload next 3 and previous 3 images for smoother navigation
+    const preloadRange = 3;
+    for (let i = 1; i <= preloadRange; i++) {
+      const nextIdx = (currentIndex + i) % images.length;
+      const prevIdx = (currentIndex - i + images.length) % images.length;
+
+      // Preload next images
+      if (images[nextIdx]) {
+        const nextLink = document.createElement('link');
+        nextLink.rel = 'preload';
+        nextLink.as = 'image';
+        nextLink.href = images[nextIdx].src;
+        nextLink.fetchPriority = i === 1 ? 'high' : 'low';
+        document.head.appendChild(nextLink);
+        preloadLinks.push(nextLink);
+      }
+
+      // Preload previous images
+      if (images[prevIdx] && prevIdx !== nextIdx) {
+        const prevLink = document.createElement('link');
+        prevLink.rel = 'preload';
+        prevLink.as = 'image';
+        prevLink.href = images[prevIdx].src;
+        prevLink.fetchPriority = i === 1 ? 'high' : 'low';
+        document.head.appendChild(prevLink);
+        preloadLinks.push(prevLink);
+      }
+    }
 
     return () => {
-      // Cleanup the preload link
-      if (link && link.parentNode) link.parentNode.removeChild(link);
+      // Cleanup all preload links
+      preloadLinks.forEach(link => {
+        if (link && link.parentNode) {
+          link.parentNode.removeChild(link);
+        }
+      });
     };
   }, [currentIndex, images]);
 
@@ -194,29 +220,40 @@ export const Slideshow: React.FC<SlideshowProps> = ({
 
     // Preload the new image first
     const newImg = new Image();
+    newImg.decoding = 'async';
+    newImg.fetchPriority = 'high';
+
     newImg.onload = () => {
-      // Cool fade out with subtle scale down
+      // Smooth fade out with subtle scale and rotation
       gsap.to(currentEl, {
         opacity: 0,
-        scale: 0.95,
-        duration: 0.3,
+        scale: 0.92,
+        rotationY: 5,
+        filter: 'blur(2px)',
+        duration: 0.4,
         ease: "power2.inOut",
+        force3D: true, // Hardware acceleration
         onComplete: () => {
           // Change the image source (image is already loaded)
           currentEl.src = currentImage?.src || "";
           currentEl.alt = currentImage?.alt || "";
 
-          // Cool fade in with scale up and bounce
+          // Enhanced fade in with elastic bounce and rotation
           gsap.fromTo(currentEl,
             {
               opacity: 0,
-              scale: 1.05
+              scale: 1.08,
+              rotationY: -5,
+              filter: 'blur(2px)'
             },
             {
               opacity: 1,
               scale: 1,
-              duration: 0.5,
-              ease: "back.out(1.2)"
+              rotationY: 0,
+              filter: 'blur(0px)',
+              duration: 0.8,
+              ease: "elastic.out(1, 0.6)",
+              force3D: true
             }
           );
         }
@@ -322,28 +359,34 @@ export const Slideshow: React.FC<SlideshowProps> = ({
               <div className="relative w-full h-[80vh] flex items-center justify-center">
                 <img
                   ref={currentImageRef}
-                  loading="lazy"
+                  loading="eager"
+                  decoding="async"
+                  fetchPriority="high"
                   src=""
                   alt=""
-                  className="w-full h-full object-contain object-center"
+                  className="w-full h-full object-contain object-center will-change-transform"
                   draggable={false}
-                  style={{ opacity: 0 }}
-                  />
+                  style={{
+                    opacity: 0,
+                    imageRendering: 'auto',
+                    transform: 'translateZ(0)' // Force hardware acceleration
+                  }}
+                />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Elegant navigation buttons */}
+        {/* Fixed position navigation buttons */}
         <Button
           ref={leftNavRef}
           variant="ghost"
           size="icon"
           onClick={handlePrevious}
-          className="fixed left-3 md:left-6 bottom-24 md:bottom-auto md:top-1/2 md:-translate-y-1/2 w-12 h-12 md:w-16 md:h-16 z-[80] flex items-center justify-center pointer-events-auto bg-transparent text-white hover:!bg-transparent active:!bg-transparent focus:!bg-transparent focus-visible:ring-0 hover:!text-white active:!text-white transition-none"
+          className="fixed left-6 top-1/2 -translate-y-1/2 w-16 h-16 z-[80] flex items-center justify-center pointer-events-auto bg-white/10 dark:bg-black/20 backdrop-blur-md border border-white/20 dark:border-white/10 text-white hover:bg-white/20 dark:hover:bg-black/30 hover:scale-110 transition-all duration-300 rounded-full shadow-lg"
           aria-label="Previous image"
         >
-          <ChevronLeft className="h-10 w-10" />
+          <ChevronLeft className="h-8 w-8" />
         </Button>
 
         <Button
@@ -351,10 +394,10 @@ export const Slideshow: React.FC<SlideshowProps> = ({
           variant="ghost"
           size="icon"
           onClick={handleNext}
-          className="fixed right-3 md:right-28 bottom-24 md:bottom-auto md:top-1/2 md:-translate-y-1/2 w-12 h-12 md:w-16 md:h-16 z-[80] flex items-center justify-center pointer-events-auto bg-transparent text-white hover:!bg-transparent active:!bg-transparent focus:!bg-transparent focus-visible:ring-0 hover:!text-white active:!text-white transition-none"
+          className="fixed right-6 top-1/2 -translate-y-1/2 w-16 h-16 z-[80] flex items-center justify-center pointer-events-auto bg-white/10 dark:bg-black/20 backdrop-blur-md border border-white/20 dark:border-white/10 text-white hover:bg-white/20 dark:hover:bg-black/30 hover:scale-110 transition-all duration-300 rounded-full shadow-lg md:right-28"
           aria-label="Next image"
         >
-          <ChevronRight className="h-10 w-10" />
+          <ChevronRight className="h-8 w-8" />
         </Button>
 
         {/* Thumbnail navigation - Right side on desktop, bottom on mobile */}
@@ -397,10 +440,24 @@ export const Slideshow: React.FC<SlideshowProps> = ({
         </div>
 
         <style>{`
+        /* Performance optimizations and custom styling */
+        .slideshow-container {
+          will-change: transform;
+          transform: translateZ(0);
+          backface-visibility: hidden;
+        }
+        
+        .slideshow-image {
+          image-rendering: -webkit-optimize-contrast;
+          image-rendering: crisp-edges;
+          image-rendering: optimize-quality;
+        }
+        
         /* Custom horizontal scroller styling for the mobile thumbnail strip */
         [data-thumb-scroll] { 
           scrollbar-width: thin; /* Firefox */
           scrollbar-color: rgba(255,255,255,0.35) transparent; /* Firefox */
+          will-change: scroll-position;
         }
         [data-thumb-scroll]::-webkit-scrollbar {
           height: 6px; /* Horizontal scrollbar height */
