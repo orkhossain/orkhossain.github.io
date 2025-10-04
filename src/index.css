@@ -207,19 +207,36 @@
 
 @layer components {
 
-  /* Elegant gallery component classes */
+  /* Elegant gallery component classes with performance optimizations */
   .gallery-card {
     @apply relative overflow-hidden bg-gallery-surface shadow-card hover:shadow-gallery;
     border: 1px solid hsl(var(--border));
-    border-radius: 15px
+    border-radius: 15px;
+    will-change: transform, box-shadow;
+    transform: translateZ(0);
+    backface-visibility: hidden;
   }
 
   .gallery-overlay {
     @apply absolute inset-0 bg-gradient-to-t from-gallery-overlay/60 to-transparent opacity-0 duration-500;
+    will-change: opacity;
   }
 
   .gallery-card:hover .gallery-overlay {
     @apply opacity-100;
+  }
+
+  /* Performance optimized gallery grid */
+  .gallery-item {
+    will-change: transform, opacity;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  .gallery-item img {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    image-rendering: optimize-quality;
   }
 
   .slideshow-nav {
@@ -244,6 +261,37 @@
   .floating-button {
     @apply fixed z-30 bg-gallery-surface/95 backdrop-blur-sm text-gallery-text hover:bg-gallery-text hover:text-gallery-surface shadow-float transition-all duration-300;
     border: 1px solid hsl(var(--border));
+  }
+
+  /* Always visible floating controls */
+  .floating-controls {
+    position: fixed !important;
+    top: 1.5rem !important;
+    right: 1.5rem !important;
+    z-index: 9999 !important;
+    pointer-events: auto !important;
+    will-change: transform;
+    transform: translateZ(0);
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+  }
+
+  .floating-controls button {
+    position: relative !important;
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    flex-shrink: 0;
+  }
+
+  /* Ensure controls stay visible on scroll */
+  @media (max-height: 600px) {
+    .floating-controls {
+      top: 1rem !important;
+      right: 1rem !important;
+      gap: 0.75rem !important;
+    }
   }
 }
 
