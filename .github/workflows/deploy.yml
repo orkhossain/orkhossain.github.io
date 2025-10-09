@@ -1,8 +1,10 @@
-name: Deploy to GitHub Pages
+name: Deploy to GitHub Pages and Keep API Alive
 
 on:
   push:
     branches: ["main"]
+  schedule:
+    - cron: "*/30 * * * *" # every 30 minutes
   workflow_dispatch:
 
 permissions:
@@ -15,7 +17,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Build and deploy job (only runs on push or manual dispatch)
   build:
+    if: github.event_name != 'schedule' # Skip build for scheduled runs
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,7 +36,9 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
+
   deploy:
+    if: github.event_name != 'schedule'
     needs: build
     runs-on: ubuntu-latest
     environment:
@@ -41,3 +47,15 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # New job: keep the API alive (runs every 30 min via schedule)
+  keep-alive:
+    if: github.event_name == 'schedule' # Only run this job on cron
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Hugging Face API
+        run: |
+          curl -X POST https://erik1998-cvrag.hf.space/ask \
+            -H "Content-Type: application/json" \
+            -d '{"query": "ping"}' \
+            --max-time 10
