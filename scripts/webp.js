@@ -6,6 +6,7 @@ const inputDir = './public/gallery/raw';   // adjust if needed
 const outDir = './public/gallery/webp';   // adjust if needed
 const thumbDir = './public/gallery/thumb';
 const maxWebpBytes = (Number(process.env.MAX_WEBP_SIZE_KB) || 500) * 1024;
+const keepRawImages = process.env.KEEP_RAW_IMAGES === 'true';
 
 const validExts = ['.jpg', '.jpeg', '.png'];
 
@@ -66,14 +67,12 @@ async function main() {
     const tasks = await convertAll(inputDir);
     await Promise.all(tasks);
 
-    if (process.env.NODE_ENV === 'production') {
-        // Remove raw images after conversion
-        try {
-            fs.rmSync(inputDir, { recursive: true, force: true });
-            console.log(`🗑️ Removed raw images from ${inputDir}`);
-        } catch (err) {
-            console.error(`⚠️ Could not remove raw images:`, err);
-        }
+    // Remove raw images after conversion so Vite does not copy huge originals into dist.
+    if (!keepRawImages) {
+        fs.rmSync(inputDir, { recursive: true, force: true });
+        console.log(`🗑️ Removed raw images from ${inputDir}`);
+    } else {
+        console.log(`ℹ️ Keeping raw images because KEEP_RAW_IMAGES=true`);
     }
 }
 
