@@ -27,6 +27,20 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
+  const getTileSpan = (image: GalleryImage) => {
+    const aspectRatio = image.width / image.height;
+
+    if (aspectRatio >= 1.45) {
+      return 'md:col-span-2 md:row-span-1';
+    }
+
+    if (aspectRatio <= 0.85) {
+      return 'row-span-2';
+    }
+
+    return 'row-span-2';
+  };
+
   // Generate creative layout configurations
   const layoutConfig = useMemo(() => {
     const configs = {
@@ -280,31 +294,32 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }
   };
 
   return (
-    <div className="p-3">
+    <div className="p-3 md:p-4">
       <div
         ref={containerRef}
-        className="max-w-screen-3xl mx-auto columns-2 md:columns-3 lg:columns-6 gap-6 [column-fill:_balance]"
+        className="mx-auto grid max-w-screen-3xl grid-cols-2 gap-3 auto-rows-[160px] sm:auto-rows-[190px] md:grid-cols-4 md:gap-4 md:auto-rows-[220px] xl:grid-cols-6 xl:gap-5"
       >
         {images.map((image, index) => (
           <div
             key={image.id}
             ref={el => itemsRef.current[index] = el}
-            className={`gallery-item cursor-pointer group break-inside-avoid mb-2 will-change-transform ${image.width > image.height ? 'col-span-2' : ''}`}
+            className={`gallery-item ${getTileSpan(image)} group relative cursor-pointer overflow-hidden rounded-xl will-change-transform`}
             onClick={() => onImageClick(index)}
             style={{
-              transform: 'translateZ(0)', // Force hardware acceleration
-              backfaceVisibility: 'hidden' // Prevent flickering
+              transform: 'translateZ(0)',
+              backfaceVisibility: 'hidden'
             }}
           >
-            <div className="relative w-full overflow-hidden rounded-xl bg-white/50 dark:bg-white/5 backdrop-blur-sm shadow-lg hover:shadow-2xl transition-all duration-500 group-hover:scale-[1.02] group-hover:-translate-y-1">
+            <div className="relative h-full w-full overflow-hidden rounded-xl bg-white/50 shadow-lg backdrop-blur-sm transition-all duration-500 group-hover:-translate-y-1 group-hover:scale-[1.02] hover:shadow-2xl dark:bg-white/5">
               <img
-                src={image.src}
+                src={image.thumbSrc}
                 alt={image.alt}
-                className="w-full h-auto object-cover transition-all duration-700 group-hover:scale-105 group-hover:brightness-110"
-                loading="lazy"
+                className="h-full w-full object-cover transition-all duration-700 group-hover:scale-105 group-hover:brightness-110"
+                loading={index < 6 ? 'eager' : 'lazy'}
                 decoding="async"
+                fetchPriority={index < 4 ? 'high' : 'auto'}
+                sizes="(max-width: 767px) 50vw, (max-width: 1279px) 25vw, 16vw"
                 onLoad={(e) => {
-                  // Smooth fade-in when image loads
                   gsap.fromTo(e.currentTarget,
                     { opacity: 0, scale: 1.05 },
                     { opacity: 1, scale: 1, duration: 0.8, ease: 'power2.out' }
@@ -312,8 +327,8 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }
                 }}
                 style={{
                   imageRendering: 'auto',
-                  transform: 'translateZ(0)', // Hardware acceleration
-                  opacity: 0 // Start invisible for fade-in effect
+                  transform: 'translateZ(0)',
+                  opacity: 0
                 }}
               />
 
@@ -334,9 +349,8 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }
               </div>
 
               {/* Animated corner indicator */}
-              <div className="absolute top-3 right-3 w-3 h-3 bg-white/80 rounded-full opacity-0 transition-all duration-500 group-hover:opacity-100 group-hover:scale-125 group-hover:bg-white shadow-lg"></div>
+              <div className="absolute right-3 top-3 h-3 w-3 rounded-full bg-white/80 opacity-0 shadow-lg transition-all duration-500 group-hover:scale-125 group-hover:bg-white group-hover:opacity-100"></div>
 
-              {/* Subtle border glow effect */}
               <div className="absolute inset-0 rounded-xl border-2 border-white/0 transition-all duration-500 group-hover:border-white/30 group-hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]"></div>
             </div>
           </div>

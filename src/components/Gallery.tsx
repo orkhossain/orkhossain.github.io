@@ -1,17 +1,22 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { GalleryGrid } from './GalleryGrid';
-import { Slideshow } from './Slideshow';
 import { LoadingScreen } from './LoadingScreen';
 import { Button } from '@/components/ui/button';
 import { Play, Shuffle } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
 
+const Slideshow = lazy(async () => {
+  const module = await import('./Slideshow');
+  return { default: module.Slideshow };
+});
+
 export interface GalleryImage {
   id: string;
   src: string;
+  thumbSrc: string;
   alt: string;
   width: number;
   height: number;
@@ -19,18 +24,60 @@ export interface GalleryImage {
   description?: string;
 }
 
-const imageModules = import.meta.glob('/public/gallery/webp/*.webp', { eager: true, import: 'default' });
+const IMAGE_DIMENSIONS: Record<string, { width: number; height: number }> = {
+  Image5: { width: 4000, height: 5000 },
+  Image28: { width: 3376, height: 6000 },
+  Image29: { width: 1554, height: 1554 },
+};
 
-const GALLERY_IMAGES: GalleryImage[] = Object.entries(imageModules).map(([path, src], index) => {
-  const filename = path.split('/').pop() || `image-${index}`;
+const DEFAULT_DIMENSIONS = { width: 6000, height: 3376 };
+const IMAGE_FILENAMES = [
+  'Image1',
+  'Image2',
+  'Image3',
+  'Image4',
+  'Image5',
+  'Image6',
+  'Image7',
+  'Image8',
+  'Image9',
+  'Image10',
+  'Image11',
+  'Image12',
+  'Image13',
+  'Image15',
+  'Image16',
+  'Image17',
+  'Image18',
+  'Image19',
+  'Image20',
+  'Image21',
+  'Image22',
+  'Image23',
+  'Image24',
+  'Image25',
+  'Image26',
+  'Image27',
+  'Image28',
+  'Image29',
+] as const;
+
+const getImageDimensions = (filename: string) => {
+  return IMAGE_DIMENSIONS[filename] || DEFAULT_DIMENSIONS;
+};
+
+const GALLERY_IMAGES: GalleryImage[] = IMAGE_FILENAMES.map((filename, index) => {
+  const dimensions = getImageDimensions(filename);
+
   return {
     id: String(index + 1),
-    src: src as string,
-    alt: filename,
-    width: 1280,
-    height: 720,
+    src: `/gallery/webp/${filename}.webp`,
+    thumbSrc: `/gallery/thumb/${filename}.webp`,
+    alt: `${filename}.webp`,
+    width: dimensions.width,
+    height: dimensions.height,
     title: filename,
-    description: ''
+    description: '',
   };
 });
 
@@ -44,7 +91,6 @@ export const Gallery: React.FC<GalleryProps> = ({ className = '' }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'slideshow'>('grid');
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
-  const [imagesLoaded, setImagesLoaded] = useState(0);
   const galleryRef = useRef<HTMLDivElement>(null);
 
   const handleImageClick = (index: number) => {
@@ -71,42 +117,54 @@ export const Gallery: React.FC<GalleryProps> = ({ className = '' }) => {
     setViewMode('slideshow');
   };
 
-  // Preload images and track progress
+  // Preload only the first visible thumbnails and the first full image.
   useEffect(() => {
-    const preloadImages = async () => {
-      const totalImages = GALLERY_IMAGES.length;
-      let loaded = 0;
+    let isCancelled = false;
+    const criticalImages = [
+      ...GALLERY_IMAGES.slice(0, 8).map((image) => image.thumbSrc),
+      GALLERY_IMAGES[0]?.src,
+    ].filter(Boolean) as string[];
 
-      const loadPromises = GALLERY_IMAGES.map((image) => {
-        return new Promise<void>((resolve) => {
-          const img = new Image();
-          img.onload = () => {
-            loaded++;
-            const progress = (loaded / totalImages) * 100;
-            setLoadingProgress(progress);
-            setImagesLoaded(loaded);
-            resolve();
-          };
-          img.onerror = () => {
-            loaded++;
-            const progress = (loaded / totalImages) * 100;
-            setLoadingProgress(progress);
-            setImagesLoaded(loaded);
-            resolve();
-          };
-          img.src = image.src;
-        });
-      });
+    const totalImages = criticalImages.length;
+    let loaded = 0;
 
-      await Promise.all(loadPromises);
-
-      // Add a longer delay to showcase the beautiful loading screen
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 3500); // Extended to 3.5 seconds after images load
+    const markLoaded = () => {
+      loaded += 1;
+      if (!isCancelled) {
+        setLoadingProgress((loaded / totalImages) * 100);
+      }
     };
 
-    preloadImages();
+    const preloadImage = (src: string, fetchPriority: 'high' | 'low') =>
+      new Promise<void>((resolve) => {
+        const img = new Image();
+        img.decoding = 'async';
+        img.fetchPriority = fetchPriority;
+        img.onload = () => {
+          markLoaded();
+          resolve();
+        };
+        img.onerror = () => {
+          markLoaded();
+          resolve();
+        };
+        img.src = src;
+      });
+
+    Promise.all(
+      criticalImages.map((src, index) => preloadImage(src, index < 4 ? 'high' : 'low'))
+    ).then(() => {
+      if (isCancelled) return;
+      window.setTimeout(() => {
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
+      }, 180);
+    });
+
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
   // Entrance animation for gallery
@@ -167,12 +225,14 @@ export const Gallery: React.FC<GalleryProps> = ({ className = '' }) => {
         {/* Main Content - Full Screen */}
         <main className="min-h-screen">
           {isSlideshow ? (
-            <Slideshow
-              images={GALLERY_IMAGES}
-              currentIndex={currentImageIndex}
-              onClose={handleCloseSlideshow}
-              onImageChange={setCurrentImageIndex}
-            />
+            <Suspense fallback={null}>
+              <Slideshow
+                images={GALLERY_IMAGES}
+                currentIndex={currentImageIndex}
+                onClose={handleCloseSlideshow}
+                onImageChange={setCurrentImageIndex}
+              />
+            </Suspense>
           ) : (
             <GalleryGrid
               images={GALLERY_IMAGES}

@@ -137,11 +137,10 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
             });
         }
 
-        // Simulate slower, more dramatic progress
-        const progressTl = gsap.timeline({ delay: 2 });
+        const progressTl = gsap.timeline();
         progressTl.to({ value: 0 }, {
             value: 100,
-            duration: 4,
+            duration: 1.1,
             ease: "power2.out",
             onUpdate: function () {
                 setInternalProgress(this.targets()[0].value);

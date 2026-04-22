@@ -18,26 +18,29 @@ export const SlideshowLoader: React.FC<SlideshowLoaderProps> = ({
     useEffect(() => {
         if (!containerRef.current || !isLoading) return;
 
+        const circle = circleRef.current;
+        const text = textRef.current;
+        const dotsContainer = dotsRef.current;
         const tl = gsap.timeline();
 
         // Set initial states
-        gsap.set([textRef.current, dotsRef.current], { opacity: 0, y: 20 });
-        gsap.set(circleRef.current, { strokeDasharray: "0 100" });
+        gsap.set([text, dotsContainer], { opacity: 0, y: 20 });
+        gsap.set(circle, { strokeDasharray: "0 100" });
 
         // Entrance animation
-        tl.to(textRef.current, {
+        tl.to(text, {
             opacity: 1,
             y: 0,
             duration: 0.8,
             ease: "power3.out"
         })
-            .to(dotsRef.current, {
+            .to(dotsContainer, {
                 opacity: 1,
                 y: 0,
                 duration: 0.6,
                 ease: "power3.out"
             }, 0.3)
-            .to(circleRef.current, {
+            .to(circle, {
                 strokeDasharray: "100 100",
                 duration: 2,
                 ease: "power2.inOut",
@@ -46,7 +49,7 @@ export const SlideshowLoader: React.FC<SlideshowLoaderProps> = ({
             }, 0.5);
 
         // Breathing animation for the circle
-        gsap.to(circleRef.current, {
+        gsap.to(circle, {
             scale: 1.1,
             duration: 2,
             ease: "power2.inOut",
@@ -56,7 +59,7 @@ export const SlideshowLoader: React.FC<SlideshowLoaderProps> = ({
         });
 
         // Floating dots animation
-        const dots = dotsRef.current?.children;
+        const dots = dotsContainer?.children;
         if (dots) {
             Array.from(dots).forEach((dot, index) => {
                 gsap.to(dot, {
@@ -70,14 +73,14 @@ export const SlideshowLoader: React.FC<SlideshowLoaderProps> = ({
             });
         }
 
-        // Auto complete after 3 seconds
+        // Keep the loader brief so navigation feels immediate.
         const timer = setTimeout(() => {
             if (onComplete) onComplete();
-        }, 3000);
+        }, 350);
 
         return () => {
             clearTimeout(timer);
-            gsap.killTweensOf([circleRef.current, textRef.current, dotsRef.current]);
+            gsap.killTweensOf([circle, text, dotsContainer]);
         };
     }, [isLoading, onComplete]);
 
