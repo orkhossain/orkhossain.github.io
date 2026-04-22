@@ -5,6 +5,7 @@ import { GalleryGrid } from './GalleryGrid';
 import { LoadingScreen } from './LoadingScreen';
 import { Button } from '@/components/ui/button';
 import { Play, Shuffle } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -97,6 +98,7 @@ interface GalleryProps {
 }
 
 export const Gallery: React.FC<GalleryProps> = ({ className = '' }) => {
+  const isMobile = useIsMobile();
   const [galleryImages] = useState(() => shuffleImages(BASE_GALLERY_IMAGES));
   const [isSlideshow, setIsSlideshow] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -200,10 +202,12 @@ export const Gallery: React.FC<GalleryProps> = ({ className = '' }) => {
       />
 
       {!isSlideshow && !isLoading && (
-        <div className="floating-controls fixed right-4 top-4 z-[9999] flex flex-col gap-4 md:right-6 md:top-6">
+        <div className={`floating-controls fixed bottom-4 left-4 z-[9999] flex justify-end md:bottom-6 md:right-1 ${
+          isMobile ? 'gap-3' : 'gap-4'
+        }`}>
           <Button
             onClick={startSlideshow}
-            className="relative rounded-full w-14 h-14 p-0 bg-white/25 dark:bg-black/30 backdrop-blur-xl border border-white/40 dark:border-white/20 shadow-2xl hover:bg-white/35 dark:hover:bg-black/40 transition-all duration-300 text-black dark:text-white"
+            className="relative h-12 w-12 rounded-full border border-white/40 bg-white/25 p-0 text-black shadow-2xl backdrop-blur-xl transition-all duration-300 hover:bg-white/35 dark:border-white/20 dark:bg-black/30 dark:text-white dark:hover:bg-black/40 md:h-14 md:w-14"
             aria-label="Start slideshow"
             onMouseEnter={(e) => gsap.to(e.currentTarget, { scale: 1.1, duration: 0.2, ease: 'power2.out' })}
             onMouseLeave={(e) => gsap.to(e.currentTarget, { scale: 1, duration: 0.2, ease: 'power2.out' })}
@@ -213,7 +217,7 @@ export const Gallery: React.FC<GalleryProps> = ({ className = '' }) => {
 
           <Button
             onClick={shuffleSlideshow}
-            className="relative rounded-full w-14 h-14 p-0 bg-white/25 dark:bg-black/30 backdrop-blur-xl border border-white/40 dark:border-white/20 shadow-2xl hover:bg-white/35 dark:hover:bg-black/40 transition-all duration-300 text-black dark:text-white"
+            className="relative h-12 w-12 rounded-full border border-white/40 bg-white/25 p-0 text-black shadow-2xl backdrop-blur-xl transition-all duration-300 hover:bg-white/35 dark:border-white/20 dark:bg-black/30 dark:text-white dark:hover:bg-black/40 md:h-14 md:w-14"
             aria-label="Random slideshow"
             onMouseEnter={(e) => gsap.to(e.currentTarget, { scale: 1.1, duration: 0.2, ease: 'power2.out' })}
             onMouseLeave={(e) => gsap.to(e.currentTarget, { scale: 1, duration: 0.2, ease: 'power2.out' })}
@@ -221,7 +225,7 @@ export const Gallery: React.FC<GalleryProps> = ({ className = '' }) => {
             <Shuffle className="h-5 w-5" />
           </Button>
 
-          <div className="bg-white/20 dark:bg-black/25 backdrop-blur-xl border border-white/30 dark:border-white/15 rounded-full px-3 py-1.5 text-xs font-medium text-black/80 dark:text-white/80 text-center shadow-lg">
+          <div className="flex items-center rounded-full border border-white/30 bg-white/20 px-3 py-1.5 text-center text-xs font-medium text-black/80 shadow-lg backdrop-blur-xl dark:border-white/15 dark:bg-black/25 dark:text-white/80 max-w-[5rem]">
             {galleryImages.length} photos
           </div>
         </div>

@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { GalleryImage } from './Gallery';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface GalleryGridProps {
   images: GalleryImage[];
@@ -28,6 +29,7 @@ const hashToUnit = (value: string) => {
 };
 
 export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }) => {
+  const isMobile = useIsMobile();
   const itemsRef = useRef<(HTMLDivElement | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   const cursorRef = useRef<HTMLDivElement>(null);
@@ -38,6 +40,24 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   const tileSpans = useMemo(() => {
+    if (isMobile) {
+      return Object.fromEntries(
+        images.map((image) => {
+          const aspectRatio = image.width / image.height;
+
+          if (aspectRatio >= 1.2) {
+            return [image.id, 'col-span-2 row-span-1'];
+          }
+
+          if (aspectRatio <= 0.85) {
+            return [image.id, 'col-span-1 row-span-2'];
+          }
+
+          return [image.id, 'col-span-1 row-span-1'];
+        })
+      );
+    }
+
     const pick = <T,>(options: T[], key: string) => {
       const randomIndex = Math.floor(hashToUnit(key) * options.length);
       return options[randomIndex];
@@ -69,7 +89,7 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }
         ], key)];
       })
     );
-  }, [images]);
+  }, [images, isMobile]);
 
   // Generate creative layout configurations
   const layoutConfig = useMemo(() => {
@@ -150,6 +170,8 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }
 
   // Mouse tracking for interactive effects
   useEffect(() => {
+    if (isMobile) return;
+
     const handleMouseMove = (e: MouseEvent) => {
       setMousePosition({ x: e.clientX, y: e.clientY });
 
@@ -166,7 +188,7 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }
 
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
+  }, [isMobile]);
 
   // Creative entrance animations based on layout
   useEffect(() => {
@@ -252,10 +274,12 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }
   }, [allLoaded, currentLayout]);
 
   const handleMouseEnter = (index: number) => {
+    if (isMobile) return;
     setHoveredIndex(index);
   };
 
   const handleMouseLeave = () => {
+    if (isMobile) return;
     setHoveredIndex(null);
   };
 
@@ -280,17 +304,17 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }
   };
 
   return (
-    <div className="p-3 md:p-4">
+    <div className="p-3 pb-24 md:p-4 md:pb-4">
       <div
         ref={containerRef}
-        className="mx-auto grid max-w-screen-3xl grid-cols-2 gap-3 auto-rows-[160px] sm:auto-rows-[190px] md:grid-cols-4 md:gap-4 md:auto-rows-[220px] xl:grid-cols-6 xl:gap-5"
+        className="mx-auto grid max-w-screen-3xl grid-cols-2 auto-rows-[140px] gap-3 sm:auto-rows-[180px] md:grid-cols-4 md:auto-rows-[220px] md:gap-4 xl:grid-cols-6 xl:gap-5"
       >
         {images.map((image, index) => (
           <div
             key={image.id}
             ref={el => itemsRef.current[index] = el}
             className={`gallery-item ${tileSpans[image.id] ?? 'col-span-1 row-span-1'} group relative cursor-pointer overflow-hidden rounded-xl will-change-transform transition-opacity duration-500 ${
-              hoveredIndex !== null && hoveredIndex !== index ? 'opacity-40' : 'opacity-100'
+              !isMobile && hoveredIndex !== null && hoveredIndex !== index ? 'opacity-40' : 'opacity-100'
             }`}
             onClick={() => onImageClick(index)}
             onMouseEnter={() => handleMouseEnter(index)}
@@ -305,7 +329,7 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }
                 src={image.thumbSrc}
                 alt={image.alt}
                 className={`h-full w-full object-cover transition-all duration-700 ${
-                  hoveredIndex !== null && hoveredIndex !== index ? 'brightness-50 saturate-75' : ''
+                  !isMobile && hoveredIndex !== null && hoveredIndex !== index ? 'brightness-50 saturate-75' : ''
                 }`}
                 loading={index < 6 ? 'eager' : 'lazy'}
                 decoding="async"
@@ -328,7 +352,7 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }
 
               <div
                 className={`absolute inset-0 transition-all duration-500 ${
-                  hoveredIndex !== null && hoveredIndex !== index ? 'bg-black/25' : 'bg-transparent'
+                  !isMobile && hoveredIndex !== null && hoveredIndex !== index ? 'bg-black/25' : 'bg-transparent'
                 }`}
               />
             </div>

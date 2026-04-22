@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import gsap from "gsap";
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Expand, Minimize, X } from 'lucide-react';
 import { GalleryImage } from './Gallery';
 import { ThumbnailNav } from './ThumbnailNav';
 import { ParticleBackground } from './ParticleBackground';
@@ -22,6 +22,7 @@ export const Slideshow: React.FC<SlideshowProps> = ({
 }) => {
   const [autoPlay, setAutoPlay] = useState(true);
   const [isLoading, setIsLoading] = useState(images.length > 0);
+  const [isImmersive, setIsImmersive] = useState(false);
   const AUTO_PLAY_INTERVAL = 4000; // ms
   const LOADER_MIN_DURATION = 450;
 
@@ -89,6 +90,10 @@ export const Slideshow: React.FC<SlideshowProps> = ({
     onClose();
   }, [onClose]);
 
+  const toggleImmersiveMode = useCallback(() => {
+    setIsImmersive((current) => !current);
+  }, []);
+
   const handlePrevious = useCallback(() => {
     const newIndex = currentIndex > 0 ? currentIndex - 1 : images.length - 1;
     onImageChange(newIndex);
@@ -109,10 +114,14 @@ export const Slideshow: React.FC<SlideshowProps> = ({
         handleNext();
         break;
       case 'Escape':
-        handleCloseSlideshow();
+        if (isImmersive) {
+          setIsImmersive(false);
+        } else {
+          handleCloseSlideshow();
+        }
         break;
     }
-  }, [handleCloseSlideshow, handleNext, handlePrevious]);
+  }, [handleCloseSlideshow, handleNext, handlePrevious, isImmersive]);
 
   useEffect(() => {
     loaderStartTimeRef.current = Date.now();
@@ -318,38 +327,50 @@ export const Slideshow: React.FC<SlideshowProps> = ({
         {/* Particle Background */}
         <ParticleBackground isActive={isLoading} />
 
-        {/* Close button */}
+        {!isImmersive && (
+          <>
+            <Button
+              ref={closeButtonRef}
+              variant="ghost"
+              size="icon"
+              onClick={handleCloseSlideshow}
+              className="fixed left-4 top-4 z-[70] h-11 w-11 rounded-full border border-white/30 bg-white/15 text-white shadow-[0_8px_30px_rgba(0,0,0,0.25)] backdrop-blur-xl transition-colors duration-300 hover:bg-white/25 dark:border-white/10 dark:bg-black/25 dark:text-white dark:hover:bg-black/35 md:left-6 md:top-6 md:h-12 md:w-12"
+              aria-label="Close slideshow"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+
+            <div
+              ref={counterRef}
+              className="absolute left-1/2 top-5 z-60 -translate-x-1/2 text-xs font-light tracking-[0.24em] text-gallery-text-muted md:top-8 md:text-sm md:tracking-wide"
+            >
+              {String(currentIndex + 1).padStart(2, '0')} / {String(images.length).padStart(2, '0')}
+            </div>
+          </>
+        )}
+
         <Button
-          ref={closeButtonRef}
           variant="ghost"
           size="icon"
-          onClick={handleCloseSlideshow}
-          className="fixed top-6 left-6 w-12 h-12 z-[70] pointer-events-auto bg-white/15 dark:bg-black/25 backdrop-blur-xl border border-white/30 dark:border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.25)] hover:bg-white/25 dark:hover:bg-black/35 text-white dark:text-white transition-colors duration-300 rounded-full"
-          aria-label="Close slideshow"
+          onClick={toggleImmersiveMode}
+          className="fixed right-4 top-4 z-[70] h-11 w-11 rounded-full border border-white/30 bg-white/15 text-white shadow-[0_8px_30px_rgba(0,0,0,0.25)] backdrop-blur-xl transition-colors duration-300 hover:bg-white/25 dark:border-white/10 dark:bg-black/25 dark:text-white dark:hover:bg-black/35 md:right-6 md:top-6 md:h-12 md:w-12"
+          aria-label={isImmersive ? 'Show slideshow controls' : 'Hide slideshow controls'}
         >
-          <X className="w-5 h-5" />
+          {isImmersive ? <Minimize className="w-5 h-5" /> : <Expand className="w-5 h-5" />}
         </Button>
-
-        {/* Image counter */}
-        <div
-          ref={counterRef}
-          className="absolute top-8 left-1/2 -translate-x-1/2 z-60 text-sm text-gallery-text-muted font-light tracking-wide"
-        >
-          {String(currentIndex + 1).padStart(2, '0')} / {String(images.length).padStart(2, '0')}
-        </div>
 
         {/* Main image container */}
         <div
-          className="absolute inset-0 flex items-center justify-center px-4 md:px-8 overflow-hidden"
+          className="absolute inset-0 flex items-center justify-center overflow-hidden px-0 pb-0 pt-0 md:px-8 md:pb-10 md:pt-10"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
           onMouseEnter={() => setAutoPlay(false)}
           onMouseLeave={() => setAutoPlay(true)}
         >
-          <div className="relative w-[90vw] max-h-full mx-auto flex justify-center">
-            <div className="relative overflow-hidden rounded-3xl isolate">
-              <div className="relative w-full h-[80vh] flex items-center justify-center">
+          <div className="relative mx-auto flex h-screen w-screen max-h-full justify-center md:h-auto md:w-[90vw]">
+            <div className="relative isolate overflow-hidden rounded-none md:rounded-3xl">
+              <div className="relative flex h-screen w-screen items-center justify-center md:h-[80vh] md:w-full">
                 <img
                   ref={currentImageRef}
                   loading="eager"
@@ -357,7 +378,7 @@ export const Slideshow: React.FC<SlideshowProps> = ({
                   fetchPriority="high"
                   src=""
                   alt=""
-                  className="w-full h-full object-contain object-center will-change-transform"
+                  className="h-full w-full object-contain object-center will-change-transform"
                   draggable={false}
                   style={{
                     opacity: 0,
@@ -370,61 +391,62 @@ export const Slideshow: React.FC<SlideshowProps> = ({
           </div>
         </div>
 
-        {/* Fixed position navigation buttons */}
-        <Button
-          ref={leftNavRef}
-          variant="ghost"
-          size="icon"
-          onClick={handlePrevious}
-          className="fixed left-6 top-1/2 -translate-y-1/2 w-16 h-16 z-[80] flex items-center justify-center pointer-events-auto bg-white/10 dark:bg-black/20 backdrop-blur-md border border-white/20 dark:border-white/10 text-white hover:bg-white/20 dark:hover:bg-black/30 hover:scale-110 transition-all duration-300 rounded-full shadow-lg"
-          aria-label="Previous image"
-        >
-          <ChevronLeft className="h-8 w-8" />
-        </Button>
+        {!isImmersive && (
+          <>
+            <Button
+              ref={leftNavRef}
+              variant="ghost"
+              size="icon"
+              onClick={handlePrevious}
+              className="fixed left-3 top-1/2 z-[80] flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white shadow-lg backdrop-blur-md transition-all duration-300 hover:bg-white/20 dark:border-white/10 dark:bg-black/20 dark:hover:bg-black/30 md:left-6 md:h-16 md:w-16 md:hover:scale-110"
+              aria-label="Previous image"
+            >
+              <ChevronLeft className="h-6 w-6 md:h-8 md:w-8" />
+            </Button>
 
-        <Button
-          ref={rightNavRef}
-          variant="ghost"
-          size="icon"
-          onClick={handleNext}
-          className="fixed right-6 top-1/2 -translate-y-1/2 w-16 h-16 z-[80] flex items-center justify-center pointer-events-auto bg-white/10 dark:bg-black/20 backdrop-blur-md border border-white/20 dark:border-white/10 text-white hover:bg-white/20 dark:hover:bg-black/30 hover:scale-110 transition-all duration-300 rounded-full shadow-lg md:right-28"
-          aria-label="Next image"
-        >
-          <ChevronRight className="h-8 w-8" />
-        </Button>
+            <Button
+              ref={rightNavRef}
+              variant="ghost"
+              size="icon"
+              onClick={handleNext}
+              className="fixed right-3 top-1/2 z-[80] flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white shadow-lg backdrop-blur-md transition-all duration-300 hover:bg-white/20 dark:border-white/10 dark:bg-black/20 dark:hover:bg-black/30 md:right-28 md:h-16 md:w-16 md:hover:scale-110"
+              aria-label="Next image"
+            >
+              <ChevronRight className="h-6 w-6 md:h-8 md:w-8" />
+            </Button>
 
-        {/* Thumbnail navigation - Right side on desktop, bottom on mobile */}
-        <div className="fixed right-0 top-0 bottom-0 w-16 md:w-20 hidden md:flex items-center justify-center bg-gallery-bg z-[40]" ref={bottomNavRef}>
-          <ThumbnailNav
-            images={images.map(img => ({ ...img, src: img.thumbSrc }))}
-            currentIndex={currentIndex}
-            onImageSelect={onImageChange}
-          />
-        </div>
+            <div className="fixed bottom-0 right-0 top-0 z-[40] hidden w-16 items-center justify-center bg-gallery-bg md:flex md:w-20" ref={bottomNavRef}>
+              <ThumbnailNav
+                images={images.map(img => ({ ...img, src: img.thumbSrc }))}
+                currentIndex={currentIndex}
+                onImageSelect={onImageChange}
+              />
+            </div>
 
-        {/* Mobile thumbnail navigation - Bottom horizontal strip */}
-        <div className="fixed bottom-0 left-0 right-0 h-16 flex md:hidden items-center justify-center bg-gallery-bg/80 backdrop-blur-sm z-[40]">
-          <ThumbnailNav
-            images={images.map(img => ({ ...img, src: img.thumbSrc }))}
-            currentIndex={currentIndex}
-            onImageSelect={onImageChange}
-            isMobile={true}
-          />
-        </div>
+            <div className="fixed bottom-0 left-0 right-0 z-[40] flex h-24 items-center justify-center border-t border-white/10 bg-gallery-bg/85 backdrop-blur-md md:hidden">
+              <ThumbnailNav
+                images={images.map(img => ({ ...img, src: img.thumbSrc }))}
+                currentIndex={currentIndex}
+                onImageSelect={onImageChange}
+                isMobile={true}
+              />
+            </div>
 
-        <div
-          ref={progressBarRef}
-          className="absolute left-1/2 -translate-x-1/2 bottom-20 md:bottom-4 z-[65] w-[70vw] max-w-2xl h-3 bg-white/15 dark:bg-white/15 rounded-full overflow-hidden cursor-pointer touch-pan-x border border-white/20 backdrop-blur-sm"
-          onPointerDown={handleSeekPointerDown}
-          onPointerMove={handleSeekPointerMove}
-          onPointerUp={handleSeekPointerUp}
-        >
-          <div
-            ref={progressFillRef}
-            className="h-full bg-black/60 dark:bg-white/70 rounded-full"
-            style={{ width: `${((currentIndex + 1) / images.length) * 100}%` }}
-          />
-        </div>
+            <div
+              ref={progressBarRef}
+              className="absolute bottom-6 left-1/2 z-[65] hidden h-2 w-[min(82vw,42rem)] -translate-x-1/2 cursor-pointer touch-pan-x overflow-hidden rounded-full border border-white/20 bg-white/15 backdrop-blur-sm md:bottom-4 md:block md:h-3 md:w-[70vw] md:max-w-2xl dark:bg-white/15"
+              onPointerDown={handleSeekPointerDown}
+              onPointerMove={handleSeekPointerMove}
+              onPointerUp={handleSeekPointerUp}
+            >
+              <div
+                ref={progressFillRef}
+                className="h-full bg-black/60 dark:bg-white/70 rounded-full"
+                style={{ width: `${((currentIndex + 1) / images.length) * 100}%` }}
+              />
+            </div>
+          </>
+        )}
 
         <style>{`
         /* Performance optimizations and custom styling */
