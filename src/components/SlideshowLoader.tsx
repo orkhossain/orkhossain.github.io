@@ -2,285 +2,193 @@ import React, { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 
 interface SlideshowLoaderProps {
-    isLoading: boolean;
-    onComplete?: () => void;
+  isLoading: boolean;
 }
 
-export const SlideshowLoader: React.FC<SlideshowLoaderProps> = ({
-    isLoading,
-    onComplete
-}) => {
-    const containerRef = useRef<HTMLDivElement>(null);
-    const circleRef = useRef<SVGCircleElement>(null);
-    const textRef = useRef<HTMLDivElement>(null);
-    const dotsRef = useRef<HTMLDivElement>(null);
+export const SlideshowLoader: React.FC<SlideshowLoaderProps> = ({ isLoading }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const circleRef = useRef<SVGCircleElement>(null);
+  const textRef = useRef<HTMLDivElement>(null);
+  const dotsRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        if (!containerRef.current || !isLoading) return;
+  useEffect(() => {
+    if (!isLoading || !containerRef.current) return;
 
-        // Create floating particles for slideshow loader
-        const container = containerRef.current;
-        const particles: HTMLDivElement[] = [];
+    const container = containerRef.current;
+    const circle = circleRef.current;
+    const text = textRef.current;
+    const dots = dotsRef.current;
+    const particles: HTMLDivElement[] = [];
 
-        // Create subtle light particles
-        for (let i = 0; i < 8; i++) {
-            const particle = document.createElement('div');
-            particle.className = 'absolute w-1 h-1 bg-white/30 rounded-full pointer-events-none';
+    for (let i = 0; i < 8; i += 1) {
+      const particle = document.createElement('div');
+      particle.className = 'absolute h-1 w-1 rounded-full bg-white/25 pointer-events-none';
 
-            const x = Math.random() * window.innerWidth;
-            const y = Math.random() * window.innerHeight;
+      const x = Math.random() * window.innerWidth;
+      const y = Math.random() * window.innerHeight;
 
-            gsap.set(particle, {
-                x,
-                y,
-                scale: Math.random() * 0.8 + 0.2,
-                opacity: Math.random() * 0.5 + 0.2
-            });
+      gsap.set(particle, {
+        x,
+        y,
+        scale: Math.random() * 0.8 + 0.4,
+        opacity: Math.random() * 0.4 + 0.2,
+      });
 
-            container.appendChild(particle);
-            particles.push(particle);
+      container.appendChild(particle);
+      particles.push(particle);
 
-            // Gentle floating motion
-            gsap.to(particle, {
-                y: y - 100 - Math.random() * 200,
-                x: x + (Math.random() - 0.5) * 150,
-                duration: 8 + Math.random() * 4,
-                ease: "none",
-                repeat: -1,
-                delay: Math.random() * 3
-            });
+      gsap.to(particle, {
+        y: y - 140 - Math.random() * 120,
+        x: x + (Math.random() - 0.5) * 120,
+        duration: 7 + Math.random() * 3,
+        ease: 'none',
+        repeat: -1,
+        yoyo: true,
+        delay: Math.random() * 2,
+      });
 
-            // Twinkling effect
-            gsap.to(particle, {
-                opacity: Math.random() * 0.8 + 0.1,
-                scale: Math.random() * 1.2 + 0.3,
-                duration: 2 + Math.random() * 2,
-                ease: "sine.inOut",
-                repeat: -1,
-                yoyo: true,
-                delay: Math.random() * 2
-            });
-        }
+      gsap.to(particle, {
+        opacity: Math.random() * 0.5 + 0.2,
+        scale: Math.random() * 1.2 + 0.6,
+        duration: 2 + Math.random() * 2,
+        ease: 'sine.inOut',
+        repeat: -1,
+        yoyo: true,
+        delay: Math.random() * 2,
+      });
+    }
 
-        const tl = gsap.timeline();
+    gsap.set([text, dots], { opacity: 0, y: 18, filter: 'blur(8px)' });
+    gsap.set(circle, { opacity: 0, scale: 0.9, strokeDasharray: '0 188' });
 
-        // Enhanced initial states
-        gsap.set([textRef.current, dotsRef.current], {
-            opacity: 0,
-            y: 30,
-            scale: 0.9,
-            filter: 'blur(8px)'
+    const tl = gsap.timeline();
+    tl.to(circle, {
+      opacity: 1,
+      scale: 1,
+      duration: 0.8,
+      ease: 'power3.out',
+    })
+      .to(
+        text,
+        {
+          opacity: 1,
+          y: 0,
+          filter: 'blur(0px)',
+          duration: 0.9,
+          ease: 'power3.out',
+        },
+        0.15
+      )
+      .to(
+        dots,
+        {
+          opacity: 1,
+          y: 0,
+          filter: 'blur(0px)',
+          duration: 0.7,
+          ease: 'power3.out',
+        },
+        0.35
+      )
+      .to(
+        circle,
+        {
+          strokeDasharray: '188 188',
+          duration: 1.8,
+          ease: 'power2.inOut',
+        },
+        0.2
+      );
+
+    gsap.to(circle, {
+      rotation: 360,
+      duration: 10,
+      ease: 'none',
+      repeat: -1,
+      transformOrigin: 'center',
+    });
+
+    gsap.to(circle, {
+      scale: 1.08,
+      duration: 2.2,
+      ease: 'sine.inOut',
+      repeat: -1,
+      yoyo: true,
+      transformOrigin: 'center',
+    });
+
+    const dotChildren = dots?.children;
+    if (dotChildren) {
+      Array.from(dotChildren).forEach((dot, index) => {
+        gsap.to(dot, {
+          y: -10,
+          scale: 1.3,
+          duration: 0.9 + index * 0.12,
+          ease: 'sine.inOut',
+          repeat: -1,
+          yoyo: true,
+          delay: index * 0.18,
         });
-        gsap.set(circleRef.current, {
-            strokeDasharray: "0 188",
-            scale: 0.8,
-            opacity: 0,
-            rotation: -90
-        });
+      });
+    }
 
-        // Cinematic entrance animation
-        tl.to(circleRef.current, {
-            opacity: 1,
-            scale: 1,
-            duration: 1.2,
-            ease: "back.out(1.7)"
-        })
-            .to(textRef.current, {
-                opacity: 1,
-                y: 0,
-                scale: 1,
-                filter: 'blur(0px)',
-                duration: 1.5,
-                ease: "power3.out"
-            }, 0.3)
-            .to(circleRef.current, {
-                strokeDasharray: "188 188",
-                duration: 2.5,
-                ease: "power2.inOut"
-            }, 0.5)
-            .to(dotsRef.current, {
-                opacity: 1,
-                y: 0,
-                scale: 1,
-                filter: 'blur(0px)',
-                duration: 1,
-                ease: "elastic.out(1, 0.5)"
-            }, 1);
+    return () => {
+      tl.kill();
+      gsap.killTweensOf([circle, text, dots]);
+      particles.forEach((particle) => {
+        gsap.killTweensOf(particle);
+        particle.remove();
+      });
+    };
+  }, [isLoading]);
 
-        // Enhanced breathing animation with multiple layers
-        gsap.to(circleRef.current, {
-            scale: 1.15,
-            duration: 3,
-            ease: "sine.inOut",
-            repeat: -1,
-            yoyo: true,
-            transformOrigin: "center"
-        });
+  if (!isLoading) return null;
 
-        // Continuous rotation
-        gsap.to(circleRef.current, {
-            rotation: 270,
-            duration: 12,
-            ease: "none",
-            repeat: -1,
-            transformOrigin: "center"
-        });
-
-        // Enhanced floating dots with wave motion
-        const dots = dotsRef.current?.children;
-        if (dots) {
-            Array.from(dots).forEach((dot, index) => {
-                // Vertical floating
-                gsap.to(dot, {
-                    y: -12,
-                    duration: 1.2 + index * 0.2,
-                    ease: "sine.inOut",
-                    repeat: -1,
-                    yoyo: true,
-                    delay: index * 0.3
-                });
-
-                // Scale pulsing
-                gsap.to(dot, {
-                    scale: 1.5,
-                    duration: 1.8 + index * 0.1,
-                    ease: "sine.inOut",
-                    repeat: -1,
-                    yoyo: true,
-                    delay: index * 0.2
-                });
-
-                // Opacity breathing
-                gsap.to(dot, {
-                    opacity: 0.9,
-                    duration: 2.5 + index * 0.3,
-                    ease: "sine.inOut",
-                    repeat: -1,
-                    yoyo: true,
-                    delay: index * 0.4
-                });
-            });
-        }
-
-        // Auto complete after 2.5 seconds
-        const timer = setTimeout(() => {
-            if (onComplete) onComplete();
-        }, 2500);
-
-        return () => {
-            clearTimeout(timer);
-            particles.forEach(particle => {
-                gsap.killTweensOf(particle);
-                if (particle.parentNode) {
-                    particle.parentNode.removeChild(particle);
-                }
-            });
-            gsap.killTweensOf([circleRef.current, textRef.current, dotsRef.current]);
-        };
-    }, [isLoading, onComplete]);
-
-    useEffect(() => {
-        if (!isLoading && containerRef.current) {
-            // Exit animation
-            const tl = gsap.timeline({
-                onComplete: () => onComplete?.()
-            });
-
-            tl.to(containerRef.current, {
-                opacity: 0,
-                scale: 0.9,
-                duration: 0.6,
-                ease: "power3.inOut"
-            });
-        }
-    }, [isLoading, onComplete]);
-
-    if (!isLoading) return null;
-
-    return (
-        <div
-            ref={containerRef}
-            className="fixed inset-0 z-[100] bg-gradient-to-br from-black via-slate-900 to-black backdrop-blur-md flex items-center justify-center overflow-hidden"
-        >
-            {/* Enhanced Background Effects */}
-            <div className="absolute inset-0 bg-gradient-radial from-white/5 via-transparent to-transparent"></div>
-            <div className="absolute inset-0 opacity-10">
-                <div className="absolute top-1/4 left-1/4 w-24 h-24 border border-white/20 rounded-full animate-pulse"></div>
-                <div className="absolute bottom-1/3 right-1/3 w-16 h-16 border border-white/15 rounded-full animate-pulse" style={{ animationDelay: '1s' }}></div>
-                <div className="absolute top-1/2 right-1/4 w-32 h-32 border border-white/10 rounded-full animate-pulse" style={{ animationDelay: '2s' }}></div>
-            </div>
-
-            <div className="text-center relative z-10">
-                {/* Enhanced Zen Circle */}
-                <div className="relative mb-10">
-                    <svg width="100" height="100" className="mx-auto">
-                        {/* Outer glow circle */}
-                        <circle
-                            cx="50"
-                            cy="50"
-                            r="35"
-                            fill="none"
-                            stroke="rgba(255,255,255,0.1)"
-                            strokeWidth="1"
-                            className="opacity-50"
-                        />
-                        {/* Background circle */}
-                        <circle
-                            cx="50"
-                            cy="50"
-                            r="30"
-                            fill="none"
-                            stroke="rgba(255,255,255,0.2)"
-                            strokeWidth="1"
-                            className="opacity-40"
-                        />
-                        {/* Progress circle */}
-                        <circle
-                            ref={circleRef}
-                            cx="50"
-                            cy="50"
-                            r="30"
-                            fill="none"
-                            stroke="rgba(255,255,255,0.9)"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            className="drop-shadow-lg"
-                            style={{
-                                transformOrigin: '50px 50px',
-                                filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.3))'
-                            }}
-                        />
-                    </svg>
-
-                    {/* Center glow */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-3 h-3 bg-white/60 rounded-full animate-pulse shadow-lg"></div>
-                    </div>
-                </div>
-
-                {/* Enhanced Japanese Text */}
-                <div ref={textRef} className="mb-8 space-y-3">
-                    <div className="text-white/95 text-xl font-light tracking-wider mb-3 drop-shadow-lg">
-                        瞬間を捉える
-                    </div>
-                    <div className="text-white/70 text-sm font-light tracking-wide">
-                        Capturing the moment
-                    </div>
-                    <div className="text-white/50 text-xs font-light tracking-widest">
-                        Preparing slideshow experience
-                    </div>
-                </div>
-
-                {/* Enhanced Floating Dots */}
-                <div ref={dotsRef} className="flex justify-center space-x-3">
-                    <div className="w-2.5 h-2.5 bg-white/50 rounded-full shadow-lg"></div>
-                    <div className="w-2.5 h-2.5 bg-white/50 rounded-full shadow-lg"></div>
-                    <div className="w-2.5 h-2.5 bg-white/50 rounded-full shadow-lg"></div>
-                </div>
-            </div>
-
-            {/* Ambient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/20 pointer-events-none"></div>
+  return (
+    <div
+      ref={containerRef}
+      className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-black/95 backdrop-blur-sm"
+    >
+      <div className="text-center">
+        <div className="relative mb-8">
+          <svg width="84" height="84" className="mx-auto">
+            <circle
+              cx="42"
+              cy="42"
+              r="30"
+              fill="none"
+              stroke="rgba(255,255,255,0.15)"
+              strokeWidth="1"
+            />
+            <circle
+              ref={circleRef}
+              cx="42"
+              cy="42"
+              r="30"
+              fill="none"
+              stroke="rgba(255,255,255,0.82)"
+              strokeWidth="2"
+              strokeLinecap="round"
+              style={{ transformOrigin: '42px 42px' }}
+            />
+          </svg>
         </div>
-    );
+
+        <div ref={textRef} className="mb-6">
+          <div className="mb-2 text-lg font-light tracking-[0.24em] text-white/90">
+            LOADING
+          </div>
+          <div className="text-sm font-light tracking-[0.18em] text-white/55">
+            Preparing the slideshow
+          </div>
+        </div>
+
+        <div ref={dotsRef} className="flex justify-center gap-2">
+          <div className="h-2 w-2 rounded-full bg-white/35" />
+          <div className="h-2 w-2 rounded-full bg-white/35" />
+          <div className="h-2 w-2 rounded-full bg-white/35" />
+        </div>
+      </div>
+    </div>
+  );
 };

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import gsap from "gsap";
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
@@ -21,8 +21,9 @@ export const Slideshow: React.FC<SlideshowProps> = ({
   onImageChange,
 }) => {
   const [autoPlay, setAutoPlay] = useState(true);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(images.length > 0);
   const AUTO_PLAY_INTERVAL = 4000; // ms
+  const LOADER_MIN_DURATION = 450;
 
   const touchStartX = useRef<number | null>(null);
   const touchDeltaX = useRef<number>(0);
@@ -41,6 +42,7 @@ export const Slideshow: React.FC<SlideshowProps> = ({
   const progressFillRef = useRef<HTMLDivElement>(null);
   const leftNavRef = useRef<HTMLButtonElement>(null);
   const rightNavRef = useRef<HTMLButtonElement>(null);
+  const loaderStartTimeRef = useRef<number>(0);
 
   const seekToClientX = (clientX: number) => {
     if (!seekBarRef.current || images.length === 0) return;
@@ -83,23 +85,22 @@ export const Slideshow: React.FC<SlideshowProps> = ({
     (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId);
   };
 
-  const handleCloseSlideshow = () => {
-    // Just close immediately
+  const handleCloseSlideshow = useCallback(() => {
     onClose();
-  };
+  }, [onClose]);
 
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     const newIndex = currentIndex > 0 ? currentIndex - 1 : images.length - 1;
     onImageChange(newIndex);
-  };
+  }, [currentIndex, images.length, onImageChange]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     const newIndex = currentIndex < images.length - 1 ? currentIndex + 1 : 0;
     onImageChange(newIndex);
-  };
+  }, [currentIndex, images.length, onImageChange]);
 
-  const handleKeyPress = (e: KeyboardEvent) => {
-    if ((e as any).repeat) return;
+  const handleKeyPress = useCallback((e: KeyboardEvent) => {
+    if (e.repeat) return;
     switch (e.key) {
       case 'ArrowLeft':
         handlePrevious();
@@ -111,12 +112,51 @@ export const Slideshow: React.FC<SlideshowProps> = ({
         handleCloseSlideshow();
         break;
     }
-  };
+  }, [handleCloseSlideshow, handleNext, handlePrevious]);
+
+  useEffect(() => {
+    loaderStartTimeRef.current = Date.now();
+  }, []);
+
+  useEffect(() => {
+    if (!isLoading || images.length === 0) return;
+
+    const initialImage = images[currentIndex];
+    if (!initialImage) return;
+
+    let cancelled = false;
+    const image = new Image();
+    image.decoding = 'async';
+    image.fetchPriority = 'high';
+
+    const finishLoading = () => {
+      const elapsed = Date.now() - loaderStartTimeRef.current;
+      const remaining = Math.max(0, LOADER_MIN_DURATION - elapsed);
+
+      window.setTimeout(() => {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }, remaining);
+    };
+
+    image.onload = finishLoading;
+    image.onerror = finishLoading;
+    image.src = initialImage.src;
+
+    if (image.complete && image.naturalWidth > 0) {
+      finishLoading();
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentIndex, images, isLoading]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyPress);
     return () => document.removeEventListener('keydown', handleKeyPress);
-  }, [currentIndex]);
+  }, [handleKeyPress]);
 
   useEffect(() => {
     if (!autoPlay) return;
@@ -124,7 +164,7 @@ export const Slideshow: React.FC<SlideshowProps> = ({
       handleNext();
     }, AUTO_PLAY_INTERVAL);
     return () => clearInterval(id);
-  }, [autoPlay, currentIndex]);
+  }, [autoPlay, handleNext]);
 
   useEffect(() => {
     const onVis = () => setAutoPlay(!document.hidden);
@@ -133,55 +173,22 @@ export const Slideshow: React.FC<SlideshowProps> = ({
   }, []);
 
   useEffect(() => {
-    // Enhanced preloading strategy
-    const preloadLinks: HTMLLinkElement[] = [];
+    const preloadRange = 2;
+    const preloaders: HTMLImageElement[] = [];
 
-    // Preload current image with highest priority
-    const currentLink = document.createElement('link');
-    currentLink.rel = 'preload';
-    currentLink.as = 'image';
-    currentLink.href = images[currentIndex]?.src;
-    currentLink.fetchPriority = 'high';
-    document.head.appendChild(currentLink);
-    preloadLinks.push(currentLink);
+    for (let i = 0; i <= preloadRange; i += 1) {
+      const nextImage = images[(currentIndex + i) % images.length];
+      const previousImage = images[(currentIndex - i + images.length) % images.length];
 
-    // Preload next 3 and previous 3 images for smoother navigation
-    const preloadRange = 3;
-    for (let i = 1; i <= preloadRange; i++) {
-      const nextIdx = (currentIndex + i) % images.length;
-      const prevIdx = (currentIndex - i + images.length) % images.length;
-
-      // Preload next images
-      if (images[nextIdx]) {
-        const nextLink = document.createElement('link');
-        nextLink.rel = 'preload';
-        nextLink.as = 'image';
-        nextLink.href = images[nextIdx].src;
-        nextLink.fetchPriority = i === 1 ? 'high' : 'low';
-        document.head.appendChild(nextLink);
-        preloadLinks.push(nextLink);
-      }
-
-      // Preload previous images
-      if (images[prevIdx] && prevIdx !== nextIdx) {
-        const prevLink = document.createElement('link');
-        prevLink.rel = 'preload';
-        prevLink.as = 'image';
-        prevLink.href = images[prevIdx].src;
-        prevLink.fetchPriority = i === 1 ? 'high' : 'low';
-        document.head.appendChild(prevLink);
-        preloadLinks.push(prevLink);
-      }
-    }
-
-    return () => {
-      // Cleanup all preload links
-      preloadLinks.forEach(link => {
-        if (link && link.parentNode) {
-          link.parentNode.removeChild(link);
-        }
+      [nextImage, previousImage].forEach((image, imageIndex) => {
+        if (!image) return;
+        const preloader = new Image();
+        preloader.decoding = 'async';
+        preloader.fetchPriority = i === 0 || (i === 1 && imageIndex === 0) ? 'high' : 'low';
+        preloader.src = image.src;
+        preloaders.push(preloader);
       });
-    };
+    }
   }, [currentIndex, images]);
 
   useEffect(() => {
@@ -298,24 +305,10 @@ export const Slideshow: React.FC<SlideshowProps> = ({
 
   const currentImage = images[currentIndex];
 
-  // Debug effect to log image data
-  useEffect(() => {
-    console.log('Slideshow Debug:', {
-      currentIndex,
-      currentImage,
-      imagesLength: images.length,
-      isLoading,
-      currentImageSrc: currentImageRef.current?.src
-    });
-  }, [currentIndex, currentImage, images.length, isLoading]);
-
   return (
     <>
       {/* Japanese-themed Loading Screen */}
-      <SlideshowLoader
-        isLoading={isLoading}
-        onComplete={() => setIsLoading(false)}
-      />
+      <SlideshowLoader isLoading={isLoading} />
 
       <div
         ref={slideshowRef}
@@ -403,10 +396,7 @@ export const Slideshow: React.FC<SlideshowProps> = ({
         {/* Thumbnail navigation - Right side on desktop, bottom on mobile */}
         <div className="fixed right-0 top-0 bottom-0 w-16 md:w-20 hidden md:flex items-center justify-center bg-gallery-bg z-[40]" ref={bottomNavRef}>
           <ThumbnailNav
-            images={images.map(img => ({
-              ...img,
-              src: img.src.replace('/webp/', '/thumb/')
-            }))}
+            images={images.map(img => ({ ...img, src: img.thumbSrc }))}
             currentIndex={currentIndex}
             onImageSelect={onImageChange}
           />
@@ -415,10 +405,7 @@ export const Slideshow: React.FC<SlideshowProps> = ({
         {/* Mobile thumbnail navigation - Bottom horizontal strip */}
         <div className="fixed bottom-0 left-0 right-0 h-16 flex md:hidden items-center justify-center bg-gallery-bg/80 backdrop-blur-sm z-[40]">
           <ThumbnailNav
-            images={images.map(img => ({
-              ...img,
-              src: img.src.replace('/webp/', '/thumb/')
-            }))}
+            images={images.map(img => ({ ...img, src: img.thumbSrc }))}
             currentIndex={currentIndex}
             onImageSelect={onImageChange}
             isMobile={true}

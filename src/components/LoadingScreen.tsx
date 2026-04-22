@@ -7,6 +7,25 @@ interface LoadingScreenProps {
     onComplete?: () => void;
 }
 
+const ZEN_QUOTES = [
+    {
+        text: 'Sit quietly, doing nothing, spring comes and the grass grows by itself.',
+        author: 'Zen proverb'
+    },
+    {
+        text: 'The obstacle is the path.',
+        author: 'Zen saying'
+    },
+    {
+        text: 'When walking, walk. When eating, eat.',
+        author: 'Zen proverb'
+    },
+    {
+        text: 'Let go or be dragged.',
+        author: 'Zen proverb'
+    }
+] as const;
+
 export const LoadingScreen: React.FC<LoadingScreenProps> = ({
     isLoading,
     progress = 0,
@@ -22,6 +41,17 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
     const subtitleRef = useRef<HTMLDivElement>(null);
     const dotsRef = useRef<HTMLDivElement>(null);
     const [internalProgress, setInternalProgress] = useState(0);
+    const [quoteIndex, setQuoteIndex] = useState(0);
+
+    useEffect(() => {
+        if (!isLoading) return;
+
+        const intervalId = window.setInterval(() => {
+            setQuoteIndex((current) => (current + 1) % ZEN_QUOTES.length);
+        }, 4200);
+
+        return () => window.clearInterval(intervalId);
+    }, [isLoading]);
 
     useEffect(() => {
         if (!containerRef.current || !isLoading) return;
@@ -215,11 +245,10 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
             });
         }
 
-        // Simulate slower, more dramatic progress
-        const progressTl = gsap.timeline({ delay: 2 });
+        const progressTl = gsap.timeline();
         progressTl.to({ value: 0 }, {
             value: 100,
-            duration: 4,
+            duration: 3.2,
             ease: "power2.out",
             onUpdate: function () {
                 setInternalProgress(this.targets()[0].value);
@@ -364,6 +393,15 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
                         </div>
                         <div className="text-xs text-black/30 dark:text-white/30 font-light tracking-widest">
                             瞬間を永遠に変える
+                        </div>
+                    </div>
+
+                    <div className="max-w-md space-y-2 px-4">
+                        <div className="text-sm md:text-base text-black/65 dark:text-white/65 font-light leading-relaxed italic min-h-12">
+                            "{ZEN_QUOTES[quoteIndex].text}"
+                        </div>
+                        <div className="text-[11px] uppercase tracking-[0.28em] text-black/35 dark:text-white/35">
+                            {ZEN_QUOTES[quoteIndex].author}
                         </div>
                     </div>
                 </div>

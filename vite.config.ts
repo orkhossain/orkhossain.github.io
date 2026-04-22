@@ -9,6 +9,33 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+
+          if (id.includes("gsap")) {
+            return "gsap";
+          }
+
+          if (id.includes("react-router-dom")) {
+            return "router";
+          }
+
+          if (id.includes("@tanstack/react-query")) {
+            return "query";
+          }
+
+          if (id.includes("lucide-react")) {
+            return "icons";
+          }
+
+          return "vendor";
+        },
+      },
+    },
+  },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {
@@ -16,5 +43,4 @@ export default defineConfig(({ mode }) => ({
     },
   },
 }));
-
 
