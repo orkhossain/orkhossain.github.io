@@ -1,8 +1,11 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "ork_gallery",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "vite",
     "build": "npm run convert:webp && vite build && cp dist/index.html dist/404.html",
