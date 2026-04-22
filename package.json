@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "npm run convert:webp && vite build && cp dist/index.html dist/404.html",
+    "build": "npm run convert:webp && vite build && rm -rf dist/gallery/raw && cp dist/index.html dist/404.html",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
