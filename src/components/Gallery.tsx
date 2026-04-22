@@ -66,7 +66,7 @@ const getImageDimensions = (filename: string) => {
   return IMAGE_DIMENSIONS[filename] || DEFAULT_DIMENSIONS;
 };
 
-const GALLERY_IMAGES: GalleryImage[] = IMAGE_FILENAMES.map((filename, index) => {
+const BASE_GALLERY_IMAGES: GalleryImage[] = IMAGE_FILENAMES.map((filename, index) => {
   const dimensions = getImageDimensions(filename);
 
   return {
@@ -81,11 +81,23 @@ const GALLERY_IMAGES: GalleryImage[] = IMAGE_FILENAMES.map((filename, index) => 
   };
 });
 
+const shuffleImages = (images: GalleryImage[]) => {
+  const shuffled = [...images];
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+  }
+
+  return shuffled;
+};
+
 interface GalleryProps {
   className?: string;
 }
 
 export const Gallery: React.FC<GalleryProps> = ({ className = '' }) => {
+  const [galleryImages] = useState(() => shuffleImages(BASE_GALLERY_IMAGES));
   const [isSlideshow, setIsSlideshow] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [viewMode, setViewMode] = useState<'grid' | 'slideshow'>('grid');
@@ -111,7 +123,7 @@ export const Gallery: React.FC<GalleryProps> = ({ className = '' }) => {
   };
 
   const shuffleSlideshow = () => {
-    const randomIndex = Math.floor(Math.random() * GALLERY_IMAGES.length);
+    const randomIndex = Math.floor(Math.random() * galleryImages.length);
     setCurrentImageIndex(randomIndex);
     setIsSlideshow(true);
     setViewMode('slideshow');
@@ -121,8 +133,8 @@ export const Gallery: React.FC<GalleryProps> = ({ className = '' }) => {
   useEffect(() => {
     let isCancelled = false;
     const criticalImages = [
-      ...GALLERY_IMAGES.slice(0, 8).map((image) => image.thumbSrc),
-      GALLERY_IMAGES[0]?.src,
+      ...galleryImages.slice(0, 8).map((image) => image.thumbSrc),
+      galleryImages[0]?.src,
     ].filter(Boolean) as string[];
 
     const totalImages = criticalImages.length;
@@ -165,7 +177,7 @@ export const Gallery: React.FC<GalleryProps> = ({ className = '' }) => {
     return () => {
       isCancelled = true;
     };
-  }, []);
+  }, [galleryImages]);
 
   // Entrance animation for gallery
   useEffect(() => {
@@ -187,47 +199,45 @@ export const Gallery: React.FC<GalleryProps> = ({ className = '' }) => {
         onComplete={() => setIsLoading(false)}
       />
 
+      {!isSlideshow && !isLoading && (
+        <div className="floating-controls fixed right-4 top-4 z-[9999] flex flex-col gap-4 md:right-6 md:top-6">
+          <Button
+            onClick={startSlideshow}
+            className="relative rounded-full w-14 h-14 p-0 bg-white/25 dark:bg-black/30 backdrop-blur-xl border border-white/40 dark:border-white/20 shadow-2xl hover:bg-white/35 dark:hover:bg-black/40 transition-all duration-300 text-black dark:text-white"
+            aria-label="Start slideshow"
+            onMouseEnter={(e) => gsap.to(e.currentTarget, { scale: 1.1, duration: 0.2, ease: 'power2.out' })}
+            onMouseLeave={(e) => gsap.to(e.currentTarget, { scale: 1, duration: 0.2, ease: 'power2.out' })}
+          >
+            <Play className="h-5 w-5 ml-0.5" fill="currentColor" />
+          </Button>
+
+          <Button
+            onClick={shuffleSlideshow}
+            className="relative rounded-full w-14 h-14 p-0 bg-white/25 dark:bg-black/30 backdrop-blur-xl border border-white/40 dark:border-white/20 shadow-2xl hover:bg-white/35 dark:hover:bg-black/40 transition-all duration-300 text-black dark:text-white"
+            aria-label="Random slideshow"
+            onMouseEnter={(e) => gsap.to(e.currentTarget, { scale: 1.1, duration: 0.2, ease: 'power2.out' })}
+            onMouseLeave={(e) => gsap.to(e.currentTarget, { scale: 1, duration: 0.2, ease: 'power2.out' })}
+          >
+            <Shuffle className="h-5 w-5" />
+          </Button>
+
+          <div className="bg-white/20 dark:bg-black/25 backdrop-blur-xl border border-white/30 dark:border-white/15 rounded-full px-3 py-1.5 text-xs font-medium text-black/80 dark:text-white/80 text-center shadow-lg">
+            {galleryImages.length} photos
+          </div>
+        </div>
+      )}
+
       <div
         ref={galleryRef}
         className={`min-h-screen bg-gallery-bg font-elegant ${className}`}
         style={{ opacity: isLoading ? 0 : 1 }}
       >
-        {/* Always Visible Floating Controls */}
-        {!isSlideshow && !isLoading && (
-          <div className="floating-controls">
-            <Button
-              onClick={startSlideshow}
-              className="relative rounded-full w-14 h-14 p-0 bg-white/25 dark:bg-black/30 backdrop-blur-xl border border-white/40 dark:border-white/20 shadow-2xl hover:bg-white/35 dark:hover:bg-black/40 transition-all duration-300 text-black dark:text-white"
-              aria-label="Start slideshow"
-              onMouseEnter={(e) => gsap.to(e.currentTarget, { scale: 1.1, duration: 0.2, ease: 'power2.out' })}
-              onMouseLeave={(e) => gsap.to(e.currentTarget, { scale: 1, duration: 0.2, ease: 'power2.out' })}
-            >
-              <Play className="h-5 w-5 ml-0.5" fill="currentColor" />
-            </Button>
-
-            <Button
-              onClick={shuffleSlideshow}
-              className="relative rounded-full w-14 h-14 p-0 bg-white/25 dark:bg-black/30 backdrop-blur-xl border border-white/40 dark:border-white/20 shadow-2xl hover:bg-white/35 dark:hover:bg-black/40 transition-all duration-300 text-black dark:text-white"
-              aria-label="Random slideshow"
-              onMouseEnter={(e) => gsap.to(e.currentTarget, { scale: 1.1, duration: 0.2, ease: 'power2.out' })}
-              onMouseLeave={(e) => gsap.to(e.currentTarget, { scale: 1, duration: 0.2, ease: 'power2.out' })}
-            >
-              <Shuffle className="h-5 w-5" />
-            </Button>
-
-            {/* Enhanced Stats Badge */}
-            <div className="bg-white/20 dark:bg-black/25 backdrop-blur-xl border border-white/30 dark:border-white/15 rounded-full px-3 py-1.5 text-xs font-medium text-black/80 dark:text-white/80 text-center shadow-lg">
-              {GALLERY_IMAGES.length} photos
-            </div>
-          </div>
-        )}
-
         {/* Main Content - Full Screen */}
         <main className="min-h-screen">
           {isSlideshow ? (
             <Suspense fallback={null}>
               <Slideshow
-                images={GALLERY_IMAGES}
+                images={galleryImages}
                 currentIndex={currentImageIndex}
                 onClose={handleCloseSlideshow}
                 onImageChange={setCurrentImageIndex}
@@ -235,7 +245,7 @@ export const Gallery: React.FC<GalleryProps> = ({ className = '' }) => {
             </Suspense>
           ) : (
             <GalleryGrid
-              images={GALLERY_IMAGES}
+              images={galleryImages}
               onImageClick={handleImageClick}
             />
           )}

@@ -21,8 +21,9 @@ export const Slideshow: React.FC<SlideshowProps> = ({
   onImageChange,
 }) => {
   const [autoPlay, setAutoPlay] = useState(true);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(images.length > 0);
   const AUTO_PLAY_INTERVAL = 4000; // ms
+  const LOADER_MIN_DURATION = 450;
 
   const touchStartX = useRef<number | null>(null);
   const touchDeltaX = useRef<number>(0);
@@ -41,6 +42,7 @@ export const Slideshow: React.FC<SlideshowProps> = ({
   const progressFillRef = useRef<HTMLDivElement>(null);
   const leftNavRef = useRef<HTMLButtonElement>(null);
   const rightNavRef = useRef<HTMLButtonElement>(null);
+  const loaderStartTimeRef = useRef<number>(0);
 
   const seekToClientX = (clientX: number) => {
     if (!seekBarRef.current || images.length === 0) return;
@@ -111,6 +113,45 @@ export const Slideshow: React.FC<SlideshowProps> = ({
         break;
     }
   }, [handleCloseSlideshow, handleNext, handlePrevious]);
+
+  useEffect(() => {
+    loaderStartTimeRef.current = Date.now();
+  }, []);
+
+  useEffect(() => {
+    if (!isLoading || images.length === 0) return;
+
+    const initialImage = images[currentIndex];
+    if (!initialImage) return;
+
+    let cancelled = false;
+    const image = new Image();
+    image.decoding = 'async';
+    image.fetchPriority = 'high';
+
+    const finishLoading = () => {
+      const elapsed = Date.now() - loaderStartTimeRef.current;
+      const remaining = Math.max(0, LOADER_MIN_DURATION - elapsed);
+
+      window.setTimeout(() => {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }, remaining);
+    };
+
+    image.onload = finishLoading;
+    image.onerror = finishLoading;
+    image.src = initialImage.src;
+
+    if (image.complete && image.naturalWidth > 0) {
+      finishLoading();
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentIndex, images, isLoading]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyPress);
@@ -267,10 +308,7 @@ export const Slideshow: React.FC<SlideshowProps> = ({
   return (
     <>
       {/* Japanese-themed Loading Screen */}
-      <SlideshowLoader
-        isLoading={isLoading}
-        onComplete={() => setIsLoading(false)}
-      />
+      <SlideshowLoader isLoading={isLoading} />
 
       <div
         ref={slideshowRef}

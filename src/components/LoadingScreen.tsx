@@ -7,6 +7,25 @@ interface LoadingScreenProps {
     onComplete?: () => void;
 }
 
+const ZEN_QUOTES = [
+    {
+        text: 'Sit quietly, doing nothing, spring comes and the grass grows by itself.',
+        author: 'Zen proverb'
+    },
+    {
+        text: 'The obstacle is the path.',
+        author: 'Zen saying'
+    },
+    {
+        text: 'When walking, walk. When eating, eat.',
+        author: 'Zen proverb'
+    },
+    {
+        text: 'Let go or be dragged.',
+        author: 'Zen proverb'
+    }
+] as const;
+
 export const LoadingScreen: React.FC<LoadingScreenProps> = ({
     isLoading,
     progress = 0,
@@ -15,56 +34,88 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
     const containerRef = useRef<HTMLDivElement>(null);
     const progressBarRef = useRef<HTMLDivElement>(null);
     const progressFillRef = useRef<HTMLDivElement>(null);
-    const logoRef = useRef<HTMLDivElement>(null);
+
     const particlesRef = useRef<HTMLDivElement[]>([]);
     const circleRef = useRef<SVGCircleElement>(null);
     const textRef = useRef<HTMLDivElement>(null);
     const subtitleRef = useRef<HTMLDivElement>(null);
     const dotsRef = useRef<HTMLDivElement>(null);
     const [internalProgress, setInternalProgress] = useState(0);
+    const [quoteIndex, setQuoteIndex] = useState(0);
+
+    useEffect(() => {
+        if (!isLoading) return;
+
+        const intervalId = window.setInterval(() => {
+            setQuoteIndex((current) => (current + 1) % ZEN_QUOTES.length);
+        }, 4200);
+
+        return () => window.clearInterval(intervalId);
+    }, [isLoading]);
 
     useEffect(() => {
         if (!containerRef.current || !isLoading) return;
 
-        // Create elegant floating sakura petals
+        // Create enhanced floating elements with variety
         const container = containerRef.current;
         const particles: HTMLDivElement[] = [];
 
-        for (let i = 0; i < 12; i++) {
+        // Create different types of floating elements
+        const elements = ['🌸', '✨', '🍃', '💫', '🌙', '⭐'];
+
+        for (let i = 0; i < 20; i++) {
             const particle = document.createElement('div');
-            particle.className = 'absolute w-3 h-3 opacity-20';
-            particle.innerHTML = '🌸';
+            const element = elements[Math.floor(Math.random() * elements.length)];
+
+            particle.className = 'absolute pointer-events-none select-none';
+            particle.innerHTML = element;
+
+            // Varied sizes and opacities
+            const size = Math.random() * 0.8 + 0.4;
+            const opacity = Math.random() * 0.3 + 0.1;
+
+            particle.style.fontSize = `${size * 1.5}rem`;
+            particle.style.opacity = opacity.toString();
 
             const x = Math.random() * window.innerWidth;
-            const y = Math.random() * window.innerHeight;
+            const y = window.innerHeight + Math.random() * 200;
 
             gsap.set(particle, {
                 x,
                 y,
-                scale: Math.random() * 0.6 + 0.4,
+                scale: size,
                 rotation: Math.random() * 360
             });
 
             container.appendChild(particle);
             particles.push(particle);
 
-            // Gentle floating animation
+            // Enhanced floating animation with physics-like movement
             gsap.to(particle, {
-                y: y - 200 - Math.random() * 100,
-                x: x + (Math.random() - 0.5) * 200,
-                rotation: Math.random() * 720,
-                duration: 8 + Math.random() * 4,
-                ease: "power1.inOut",
+                y: -200 - Math.random() * 300,
+                x: x + (Math.random() - 0.5) * 400,
+                rotation: Math.random() * 1080,
+                duration: 12 + Math.random() * 8,
+                ease: "none",
+                repeat: -1,
+                delay: Math.random() * 5
+            });
+
+            // Organic pulsing and rotation
+            gsap.to(particle, {
+                scale: size * (0.8 + Math.random() * 0.6),
+                duration: 4 + Math.random() * 3,
+                ease: "sine.inOut",
                 repeat: -1,
                 yoyo: true,
                 delay: Math.random() * 3
             });
 
-            // Gentle scale pulsing
+            // Subtle drift animation
             gsap.to(particle, {
-                scale: Math.random() * 0.8 + 0.6,
-                duration: 3 + Math.random() * 2,
-                ease: "power2.inOut",
+                x: `+=${(Math.random() - 0.5) * 100}`,
+                duration: 6 + Math.random() * 4,
+                ease: "sine.inOut",
                 repeat: -1,
                 yoyo: true,
                 delay: Math.random() * 2
@@ -73,66 +124,123 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
 
         particlesRef.current = particles;
 
-        // Enhanced entrance animation
+        // Sophisticated entrance animation with staggered reveals
         const tl = gsap.timeline();
 
-        // Set initial states
-        gsap.set([textRef.current, subtitleRef.current, dotsRef.current], { opacity: 0, y: 30 });
-        gsap.set(circleRef.current, { strokeDasharray: "0 283", rotation: -90 });
-        gsap.set(progressBarRef.current, { opacity: 0, scaleX: 0 });
+        // Set initial states with more dramatic transforms
+        gsap.set([textRef.current, subtitleRef.current, dotsRef.current], {
+            opacity: 0,
+            y: 50,
+            scale: 0.9,
+            filter: 'blur(10px)'
+        });
+        gsap.set(circleRef.current, {
+            strokeDasharray: "0 283",
+            rotation: -90,
+            scale: 0.8,
+            opacity: 0
+        });
+        gsap.set(progressBarRef.current, {
+            opacity: 0,
+            scaleX: 0,
+            y: 20
+        });
 
-        // Longer, more meditative entrance sequence
-        tl.to(textRef.current, {
+        // Cinematic entrance sequence
+        tl.to(circleRef.current, {
             opacity: 1,
-            y: 0,
-            duration: 2,
-            ease: "power3.out"
+            scale: 1,
+            duration: 1.5,
+            ease: "back.out(1.7)"
         })
+            .to(textRef.current, {
+                opacity: 1,
+                y: 0,
+                scale: 1,
+                filter: 'blur(0px)',
+                duration: 2.5,
+                ease: "power3.out"
+            }, 0.5)
+            .to(circleRef.current, {
+                strokeDasharray: "283 283",
+                duration: 4,
+                ease: "power2.inOut"
+            }, 1)
             .to(subtitleRef.current, {
                 opacity: 1,
                 y: 0,
-                duration: 1.5,
+                scale: 1,
+                filter: 'blur(0px)',
+                duration: 2,
                 ease: "power3.out"
-            }, 1)
-            .to(circleRef.current, {
-                strokeDasharray: "283 283",
-                duration: 3,
-                ease: "power2.inOut"
             }, 1.5)
             .to(dotsRef.current, {
                 opacity: 1,
                 y: 0,
-                duration: 1,
-                ease: "power3.out"
+                scale: 1,
+                filter: 'blur(0px)',
+                duration: 1.5,
+                ease: "elastic.out(1, 0.5)"
             }, 2.5)
             .to(progressBarRef.current, {
                 opacity: 1,
                 scaleX: 1,
-                duration: 1.2,
+                y: 0,
+                duration: 1.8,
                 ease: "power3.out"
             }, 3);
 
-        // Slower, more meditative breathing animation for the circle
+        // Enhanced breathing animation with multiple layers
         gsap.to(circleRef.current, {
-            scale: 1.08,
-            duration: 4,
-            ease: "power2.inOut",
+            scale: 1.12,
+            duration: 5,
+            ease: "sine.inOut",
             repeat: -1,
             yoyo: true,
             transformOrigin: "center"
         });
 
-        // Slower, more graceful floating dots animation
+        // Subtle rotation for the circle
+        gsap.to(circleRef.current, {
+            rotation: 360,
+            duration: 20,
+            ease: "none",
+            repeat: -1,
+            transformOrigin: "center"
+        });
+
+        // Enhanced floating dots with wave-like motion
         const dots = dotsRef.current?.children;
         if (dots) {
             Array.from(dots).forEach((dot, index) => {
+                // Vertical floating
                 gsap.to(dot, {
-                    y: -8,
-                    duration: 1.5,
-                    ease: "power2.inOut",
+                    y: -12,
+                    duration: 2 + index * 0.3,
+                    ease: "sine.inOut",
                     repeat: -1,
                     yoyo: true,
-                    delay: index * 0.5
+                    delay: index * 0.6
+                });
+
+                // Subtle scale pulsing
+                gsap.to(dot, {
+                    scale: 1.4,
+                    duration: 1.5 + index * 0.2,
+                    ease: "sine.inOut",
+                    repeat: -1,
+                    yoyo: true,
+                    delay: index * 0.4
+                });
+
+                // Opacity breathing
+                gsap.to(dot, {
+                    opacity: 0.8,
+                    duration: 3 + index * 0.5,
+                    ease: "sine.inOut",
+                    repeat: -1,
+                    yoyo: true,
+                    delay: index * 0.3
                 });
             });
         }
@@ -140,7 +248,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
         const progressTl = gsap.timeline();
         progressTl.to({ value: 0 }, {
             value: 100,
-            duration: 1.1,
+            duration: 3.2,
             ease: "power2.out",
             onUpdate: function () {
                 setInternalProgress(this.targets()[0].value);
@@ -223,7 +331,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
     return (
         <div
             ref={containerRef}
-            className="fixed inset-0 z-[1000] flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-black dark:to-slate-800"
+            className="fixed inset-0 z-[1000] flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-black dark:to-slate-800 overflow-hidden"
         >
             {/* Main Content */}
             <div className="relative flex flex-col items-center space-y-8">
@@ -287,6 +395,15 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
                             瞬間を永遠に変える
                         </div>
                     </div>
+
+                    <div className="max-w-md space-y-2 px-4">
+                        <div className="text-sm md:text-base text-black/65 dark:text-white/65 font-light leading-relaxed italic min-h-12">
+                            "{ZEN_QUOTES[quoteIndex].text}"
+                        </div>
+                        <div className="text-[11px] uppercase tracking-[0.28em] text-black/35 dark:text-white/35">
+                            {ZEN_QUOTES[quoteIndex].author}
+                        </div>
+                    </div>
                 </div>
 
                 {/* Elegant Progress Bar */}
@@ -317,12 +434,33 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
                 </div>
             </div>
 
-            {/* Subtle Background Pattern */}
-            <div className="absolute inset-0 opacity-5 dark:opacity-10">
-                <div className="absolute top-1/4 left-1/4 w-32 h-32 border border-current rounded-full"></div>
-                <div className="absolute bottom-1/4 right-1/4 w-24 h-24 border border-current rounded-full"></div>
-                <div className="absolute top-1/3 right-1/3 w-16 h-16 border border-current rounded-full"></div>
+            {/* Ultra Massive Display-Filling Circles */}
+            <div className="absolute inset-0 opacity-6 dark:opacity-15 overflow-hidden">
+                {/* Gigantic primary circles that dominate the display */}
+                <div className="absolute -top-3/4 -left-3/4 w-[300vw] h-[300vh] border-2 border-current rounded-full animate-mega-pulse" style={{ animationDelay: '0s', animationDuration: '20s' }}></div>
+                <div className="absolute -bottom-2/3 -right-2/3 w-[280vw] h-[280vh] border border-current rounded-full animate-mega-pulse" style={{ animationDelay: '5s', animationDuration: '25s' }}></div>
+                <div className="absolute -top-2/3 -right-3/4 w-[250vw] h-[250vh] border border-current rounded-full animate-pulse" style={{ animationDelay: '10s', animationDuration: '30s' }}></div>
+                <div className="absolute -bottom-3/4 -left-1/2 w-[320vw] h-[320vh] border border-current rounded-full animate-mega-pulse" style={{ animationDelay: '3s', animationDuration: '22s' }}></div>
+
+                {/* Massive secondary layer */}
+                <div className="absolute -top-1/2 -left-1/2 w-[220vw] h-[220vh] border-2 border-current rounded-full animate-pulse" style={{ animationDelay: '7s', animationDuration: '18s' }}></div>
+                <div className="absolute -bottom-1/2 -right-1/2 w-[240vw] h-[240vh] border border-current rounded-full animate-mega-pulse" style={{ animationDelay: '12s', animationDuration: '16s' }}></div>
+                <div className="absolute top-0 -left-2/3 w-[200vw] h-[200vh] border border-current rounded-full animate-pulse" style={{ animationDelay: '8s', animationDuration: '24s' }}></div>
+                <div className="absolute -top-1/3 right-0 w-[180vw] h-[180vh] border border-current rounded-full animate-mega-pulse" style={{ animationDelay: '15s', animationDuration: '14s' }}></div>
+
+                {/* Large overlay circles for additional depth */}
+                <div className="absolute top-1/4 left-1/4 w-[160vw] h-[160vh] border border-current rounded-full animate-pulse opacity-70" style={{ animationDelay: '2s', animationDuration: '12s' }}></div>
+                <div className="absolute bottom-1/4 right-1/4 w-[140vw] h-[140vh] border border-current rounded-full animate-mega-pulse opacity-60" style={{ animationDelay: '9s', animationDuration: '15s' }}></div>
+                <div className="absolute top-1/2 right-1/3 w-[120vw] h-[120vh] border border-current rounded-full animate-pulse opacity-80" style={{ animationDelay: '6s', animationDuration: '19s' }}></div>
+
+                {/* Ultra-massive atmospheric circles */}
+                <div className="absolute -top-full -left-full w-[400vw] h-[400vh] border border-current rounded-full animate-ultra-pulse opacity-25" style={{ animationDelay: '18s' }}></div>
+                <div className="absolute -bottom-full -right-full w-[350vw] h-[350vh] border border-current rounded-full animate-ultra-pulse opacity-20" style={{ animationDelay: '25s' }}></div>
+                <div className="absolute top-1/2 left-1/2 w-[500vw] h-[500vh] border border-current rounded-full animate-ultra-pulse opacity-15" style={{ animationDelay: '30s' }}></div>
             </div>
+
+            {/* Ambient Light Effect */}
+            <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-black/5 dark:to-white/5 pointer-events-none"></div>
         </div>
     );
 };

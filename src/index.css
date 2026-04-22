@@ -300,4 +300,82 @@
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--primary)) hsl(var(--gallery-surface));
   }
+
+  /* Enhanced loading screen utilities */
+  .bg-gradient-radial {
+    background: radial-gradient(circle, var(--tw-gradient-stops));
+  }
+
+  /* Loading animations */
+  @keyframes float-up {
+    0% {
+      transform: translateY(100vh) rotate(0deg);
+      opacity: 0;
+    }
+
+    10% {
+      opacity: 1;
+    }
+
+    90% {
+      opacity: 1;
+    }
+
+    100% {
+      transform: translateY(-100px) rotate(360deg);
+      opacity: 0;
+    }
+  }
+
+  .animate-float-up {
+    animation: float-up 12s linear infinite;
+  }
+
+  /* Enhanced pulse animation for ultra-large circles */
+  @keyframes mega-pulse {
+
+    0%,
+    100% {
+      opacity: 0.05;
+      transform: scale(0.92);
+    }
+
+    25% {
+      opacity: 0.15;
+      transform: scale(0.98);
+    }
+
+    50% {
+      opacity: 0.25;
+      transform: scale(1.08);
+    }
+
+    75% {
+      opacity: 0.12;
+      transform: scale(1.02);
+    }
+  }
+
+  .animate-mega-pulse {
+    animation: mega-pulse 12s ease-in-out infinite;
+  }
+
+  /* Ultra-slow pulse for atmospheric circles */
+  @keyframes ultra-pulse {
+
+    0%,
+    100% {
+      opacity: 0.02;
+      transform: scale(0.88);
+    }
+
+    50% {
+      opacity: 0.18;
+      transform: scale(1.12);
+    }
+  }
+
+  .animate-ultra-pulse {
+    animation: ultra-pulse 20s ease-in-out infinite;
+  }
 }

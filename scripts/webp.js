@@ -5,8 +5,16 @@ import sharp from 'sharp';
 const inputDir = './public/gallery/raw';   // adjust if needed
 const outDir = './public/gallery/webp';   // adjust if needed
 const thumbDir = './public/gallery/thumb';
+const maxWebpBytes = (Number(process.env.MAX_WEBP_SIZE_KB) || 500) * 1024;
+const keepRawImages = process.env.KEEP_RAW_IMAGES !== 'false';
+const thumbnailWidth = Number(process.env.THUMB_WIDTH) || 900;
 
 const validExts = ['.jpg', '.jpeg', '.png'];
+
+function resetDir(dir) {
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.mkdirSync(dir, { recursive: true });
+}
 
 async function convertAll(dir) {
     const tasks = [];
@@ -20,31 +28,30 @@ async function convertAll(dir) {
             tasks.push(...subTasks);
         } else if (validExts.includes(ext)) {
             const base = path.basename(file, ext);
-            if (!fs.existsSync(outDir)) {
-                fs.mkdirSync(outDir, { recursive: true });
-            }
             const outPath = path.join(outDir, `${base}.webp`);
-            if (!fs.existsSync(thumbDir)) {
-                fs.mkdirSync(thumbDir, { recursive: true });
-            }
             const thumbPath = path.join(thumbDir, `${base}.webp`);
 
             tasks.push(
                 sharp(fullPath)
                     .rotate() // ✅ rotate pixels based on EXIF and remove the Orientation tag
-                    .webp({ quality: 1 })
-                    .toFile(outPath)
-                    .then(() => console.log(`✅ Converted: ${file} → ${base}.webp`))
-                    .catch(err => console.error(`❌ Error converting ${file}:`, err))
-            );
-            tasks.push(
-                sharp(fullPath)
-                    .rotate()
-                    .resize({ width: 300 }) // thumbnail width
                     .webp({ quality: 70 })
-                    .toFile(thumbPath)
-                    .then(() => console.log(`✅ Thumbnail: ${file} → ${base}.webp`))
-                    .catch(err => console.error(`❌ Error creating thumbnail for ${file}:`, err))
+                    .toFile(outPath)
+                    .then(async () => {
+                        const outputSize = fs.statSync(outPath).size;
+                        if (outputSize > maxWebpBytes) {
+                            console.log(`⚠️ Large image kept: ${file} (${Math.round(outputSize / 1024)}KB > ${Math.round(maxWebpBytes / 1024)}KB)`);
+                        }
+
+                        console.log(`✅ Converted: ${file} → ${base}.webp`);
+                        await sharp(fullPath)
+                            .rotate()
+                            .resize({ width: thumbnailWidth, withoutEnlargement: true })
+                            .sharpen()
+                            .webp({ quality: 84 })
+                            .toFile(thumbPath);
+                        console.log(`✅ Thumbnail: ${file} → ${base}.webp`);
+                    })
+                    .catch(err => console.error(`❌ Error converting ${file}:`, err))
             );
         }
     }
@@ -52,17 +59,23 @@ async function convertAll(dir) {
 }
 
 async function main() {
+    if (!fs.existsSync(inputDir)) {
+        console.log(`ℹ️ Skipping conversion because ${inputDir} does not exist; keeping existing optimized assets`);
+        return;
+    }
+
+    resetDir(outDir);
+    resetDir(thumbDir);
+    console.log(`ℹ️ Max generated image size: ${Math.round(maxWebpBytes / 1024)}KB`);
+
     const tasks = await convertAll(inputDir);
     await Promise.all(tasks);
 
-    if (process.env.NODE_ENV === 'production') {
-        // Remove raw images after conversion
-        try {
-            fs.rmSync(inputDir, { recursive: true, force: true });
-            console.log(`🗑️ Removed raw images from ${inputDir}`);
-        } catch (err) {
-            console.error(`⚠️ Could not remove raw images:`, err);
-        }
+    if (!keepRawImages) {
+        fs.rmSync(inputDir, { recursive: true, force: true });
+        console.log(`🗑️ Removed raw images from ${inputDir}`);
+    } else {
+        console.log(`ℹ️ Keeping raw images after conversion`);
     }
 }
 
