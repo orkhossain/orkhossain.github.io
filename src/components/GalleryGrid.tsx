@@ -40,24 +40,6 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   const tileSpans = useMemo(() => {
-    if (isMobile) {
-      return Object.fromEntries(
-        images.map((image) => {
-          const aspectRatio = image.width / image.height;
-
-          if (aspectRatio >= 1.2) {
-            return [image.id, 'col-span-2 row-span-1'];
-          }
-
-          if (aspectRatio <= 0.85) {
-            return [image.id, 'col-span-1 row-span-2'];
-          }
-
-          return [image.id, 'col-span-1 row-span-1'];
-        })
-      );
-    }
-
     const pick = <T,>(options: T[], key: string) => {
       const randomIndex = Math.floor(hashToUnit(key) * options.length);
       return options[randomIndex];
@@ -68,28 +50,48 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }
         const aspectRatio = image.width / image.height;
         const key = `${image.id}-${index}-${images.length}`;
 
-        if (aspectRatio >= 1.1) {
-          return [image.id, pick([
-            'col-span-2 row-span-1',
-            'col-span-2 row-span-2',
-          ], key)];
-        }
+        const options = aspectRatio >= 1.8
+          ? [
+              { cols: 3, rows: 2 },
+              { cols: 2, rows: 1 },
+              { cols: 2, rows: 2 },
+            ]
+          : aspectRatio >= 1.25
+            ? [
+                { cols: 2, rows: 1 },
+                { cols: 3, rows: 2 },
+                { cols: 2, rows: 2 },
+              ]
+            : aspectRatio <= 0.6
+              ? [
+                  { cols: 2, rows: 3 },
+                  { cols: 1, rows: 2 },
+                  { cols: 2, rows: 2 },
+                ]
+              : aspectRatio <= 0.85
+                ? [
+                    { cols: 1, rows: 2 },
+                    { cols: 2, rows: 3 },
+                    { cols: 2, rows: 2 },
+                  ]
+                : [
+                    { cols: 1, rows: 1 },
+                    { cols: 2, rows: 1 },
+                    { cols: 1, rows: 2 },
+                    { cols: 2, rows: 2 },
+                    { cols: 2, rows: 3 },
+                    { cols: 3, rows: 2 },
+                  ];
 
-        if (aspectRatio <= 0.9) {
-          return [image.id, pick([
-            'col-span-1 row-span-2',
-            'col-span-2 row-span-2',
-          ], key)];
-        }
+        const span = pick(options, key);
 
-        return [image.id, pick([
-          'col-span-1 row-span-1',
-          'col-span-1 row-span-2',
-          'col-span-2 row-span-1',
-        ], key)];
+        return [image.id, {
+          cols: Math.min(span.cols, 3),
+          rows: Math.min(span.rows, 3),
+        }];
       })
     );
-  }, [images, isMobile]);
+  }, [images]);
 
   // Generate creative layout configurations
   const layoutConfig = useMemo(() => {
@@ -307,19 +309,21 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }
     <div className="p-3 pb-24 md:p-4 md:pb-4">
       <div
         ref={containerRef}
-        className="mx-auto grid max-w-screen-3xl grid-cols-2 auto-rows-[140px] gap-3 sm:auto-rows-[180px] md:grid-cols-4 md:auto-rows-[220px] md:gap-4 xl:grid-cols-6 xl:gap-5"
+        className="mx-auto grid grid-flow-row-dense max-w-screen-3xl grid-cols-3 auto-rows-[110px] gap-2 sm:auto-rows-[160px] sm:gap-3 md:grid-cols-4 md:auto-rows-[220px] md:gap-4 xl:grid-cols-6 xl:gap-5"
       >
         {images.map((image, index) => (
           <div
             key={image.id}
             ref={el => itemsRef.current[index] = el}
-            className={`gallery-item ${tileSpans[image.id] ?? 'col-span-1 row-span-1'} group relative cursor-pointer overflow-hidden rounded-xl will-change-transform transition-opacity duration-500 ${
+            className={`gallery-item group relative cursor-pointer overflow-hidden rounded-xl will-change-transform transition-opacity duration-500 ${
               !isMobile && hoveredIndex !== null && hoveredIndex !== index ? 'opacity-40' : 'opacity-100'
             }`}
             onClick={() => onImageClick(index)}
             onMouseEnter={() => handleMouseEnter(index)}
             onMouseLeave={handleMouseLeave}
             style={{
+              gridColumn: `span ${tileSpans[image.id]?.cols ?? 1} / span ${tileSpans[image.id]?.cols ?? 1}`,
+              gridRow: `span ${tileSpans[image.id]?.rows ?? 1} / span ${tileSpans[image.id]?.rows ?? 1}`,
               transform: 'translateZ(0)',
               backfaceVisibility: 'hidden'
             }}
