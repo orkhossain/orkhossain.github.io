@@ -9,6 +9,10 @@ interface GalleryGridProps {
   onImageClick: (index: number) => void;
 }
 
+interface ProcessedImage extends GalleryImage {
+  originalIndex: number;
+}
+
 // Creative layout patterns
 const LAYOUT_PATTERNS = [
   'mosaic', 'spiral', 'wave', 'diamond', 'organic'
@@ -39,6 +43,17 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
+  // Append 1×1 filler items so grid-flow-row-dense can fill every empty cell
+  const processedImages = useMemo<ProcessedImage[]>(() => {
+    const base: ProcessedImage[] = images.map((img, i) => ({ ...img, originalIndex: i }));
+    const fillers: ProcessedImage[] = Array.from({ length: 6 }, (_, i) => ({
+      ...images[i % images.length],
+      id: `__pad_${i}`,
+      originalIndex: i % images.length,
+    }));
+    return [...base, ...fillers];
+  }, [images]);
+
   const tileSpans = useMemo(() => {
     const pick = <T,>(options: T[], key: string) => {
       const randomIndex = Math.floor(hashToUnit(key) * options.length);
@@ -46,7 +61,10 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({ images, onImageClick }
     };
 
     return Object.fromEntries(
-      images.map((image, index) => {
+      processedImages.map((image, index) => {
+        if (image.id.startsWith('__pad_')) {
+          return [image.id, { cols: 1, rows: 1 }];
+        }
         const aspectRatio = image.width / image.height;
         const key = `${image.id}-${index}-${images.length}`;
 
