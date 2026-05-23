@@ -6,6 +6,7 @@ import { LoadingScreen } from './LoadingScreen';
 import { Button } from '@/components/ui/button';
 import { Play, Shuffle } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useLenis } from '@/hooks/use-lenis';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -106,6 +107,8 @@ export const Gallery: React.FC<GalleryProps> = ({ className = '' }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const galleryRef = useRef<HTMLDivElement>(null);
+
+  useLenis(isSlideshow);
 
   const handleImageClick = (index: number) => {
     setCurrentImageIndex(index);
